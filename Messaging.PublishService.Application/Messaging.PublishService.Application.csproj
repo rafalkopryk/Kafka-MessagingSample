@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Messaging.Common\Messaging.Common.csproj" />
+    <ProjectReference Include="..\Messaging.Core.Application.Abstractions\Messaging.Core.Application.Abstractions.csproj" />
+    <ProjectReference Include="..\Messaging.Core.Domain.Abstractions\Messaging.Core.Domain.Abstractions.csproj" />
+    <ProjectReference Include="..\Messaging.PublishService.Domain\Messaging.PublishService.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
