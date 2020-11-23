@@ -1,18 +1,19 @@
-﻿using Confluent.Kafka;
-using Messaging.Core.Application.Abstractions.ServiceBus;
-using Messaging.Core.Domain.Abstractions;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-namespace Messaging.Infrastructure.ServiceBus
+﻿namespace Messaging.Infrastructure.ServiceBus
 {
-    public class KafkaEventBusPublisher : IEventBusPublisher
+    using System.Text.Json;
+    using System.Threading.Tasks;
+
+    using Confluent.Kafka;
+    using Messaging.Core.Application.Abstractions.ServiceBus;
+    using Messaging.Core.Domain.Abstractions;
+
+    internal class KafkaEventBusPublisher : IEventBusPublisher
     {
-        private readonly IProducer<string, string> _producer;
+        private readonly IProducer<string, string> producer;
 
         public KafkaEventBusPublisher(IProducer<string, string> producer)
         {
-            _producer = producer;
+            this.producer = producer;
         }
 
         public async Task PublishAsync<TEvent>(TEvent @event, string topicName) where TEvent : IEvent
@@ -24,7 +25,7 @@ namespace Messaging.Infrastructure.ServiceBus
                 Value = data
             };
 
-            await _producer.ProduceAsync(topicName, message)
+            await this.producer.ProduceAsync(topicName, message)
                 .ConfigureAwait(false);
         }
     }

@@ -1,8 +1,8 @@
-﻿using CSharpFunctionalExtensions;
-using MediatR;
-
-namespace Messaging.Core.Domain.Abstractions
+﻿namespace Messaging.Core.Domain.Abstractions
 {
+    using CSharpFunctionalExtensions;
+    using MediatR;
+
     public interface ICommand : IRequest<Result>
     {
     }

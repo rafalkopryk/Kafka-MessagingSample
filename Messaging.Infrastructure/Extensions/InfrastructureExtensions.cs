@@ -1,17 +1,25 @@
-﻿using Confluent.Kafka;
-using Messaging.Core.Application.Abstractions.ServiceBus;
-using Messaging.Core.Domain.Abstractions;
-using Messaging.Infrastructure.ServiceBus;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Linq;
-
-namespace Messaging.Infrastructure.Extensions
+﻿namespace Messaging.Infrastructure.Extensions
 {
+    using System;
+    using System.Linq;
+
+    using Confluent.Kafka;
+    using Messaging.Core.Application.Abstractions.ServiceBus;
+    using Messaging.Core.Domain.Abstractions;
+    using Messaging.Infrastructure.ServiceBus;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+
     public static class InfrastructureExtensions
     {
-        public static void AddKafkaEventBusSubscriber(this IServiceCollection serviceCollection, IConfiguration configuration)
+        public static void ConfigureMessagingInfrastructure (this IServiceCollection serviceCollection, IConfiguration configuration)
+        {
+            serviceCollection
+                .AddKafkaEventBusSubscriber(configuration)
+                .AddKafkaEventBusPublisher(configuration);
+        }
+
+        private static IServiceCollection AddKafkaEventBusSubscriber(this IServiceCollection serviceCollection, IConfiguration configuration)
         {
             var events = AppDomain.CurrentDomain
                 .GetAssemblies()
@@ -23,23 +31,27 @@ namespace Messaging.Infrastructure.Extensions
             eventProvider.RegisterEvent(events);
 
             var consumerConfig = new ConsumerConfig();
-            configuration.Bind("consumer", consumerConfig);
+            configuration.Bind("EventBus", consumerConfig);
             var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
 
             serviceCollection.AddSingleton(consumer);
             serviceCollection.AddSingleton<IEventProvider>(eventProvider);
             serviceCollection.AddTransient<IEventBusSubscriber, KafkaEventBusSubscriber>();
+
+            return serviceCollection;
         }
 
-        public static void AddKafkaEventBusPublisher(this IServiceCollection serviceCollection, IConfiguration configuration)
+        private static IServiceCollection AddKafkaEventBusPublisher(this IServiceCollection serviceCollection, IConfiguration configuration)
         {
             var producerConfig = new ProducerConfig();
 
-            configuration.Bind("producer", producerConfig);
+            configuration.Bind("EventBus", producerConfig);
             var producer = new ProducerBuilder<string, string>(producerConfig).Build();
 
             serviceCollection.AddSingleton(producer);
             serviceCollection.AddTransient<IEventBusPublisher, KafkaEventBusPublisher>();
+
+            return serviceCollection;
         }
     }
 }

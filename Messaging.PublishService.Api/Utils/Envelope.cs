@@ -1,7 +1,7 @@
-﻿using System;
-
-namespace Messaging.PublishService.Api.Utils
+﻿namespace Messaging.PublishService.Api.Utils
 {
+    using System;
+
     public class Envelope<T>
     {
         public T Result { get; }

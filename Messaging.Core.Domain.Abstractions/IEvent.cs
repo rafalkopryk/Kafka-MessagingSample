@@ -1,7 +1,7 @@
-﻿using MediatR;
-
-namespace Messaging.Core.Domain.Abstractions
+﻿namespace Messaging.Core.Domain.Abstractions
 {
+    using MediatR;
+
     public interface IEvent : INotification
     {
     }

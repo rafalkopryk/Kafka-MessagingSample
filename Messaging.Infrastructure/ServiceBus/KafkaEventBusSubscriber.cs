@@ -1,33 +1,34 @@
-﻿using Confluent.Kafka;
-using MediatR;
-using Messaging.Core.Application.Abstractions.ServiceBus;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Messaging.Infrastructure.ServiceBus
+﻿namespace Messaging.Infrastructure.ServiceBus
 {
-    public class KafkaEventBusSubscriber : IEventBusSubscriber
+    using System;
+    using System.Text.Json;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    using Confluent.Kafka;
+    using MediatR;
+    using Messaging.Core.Application.Abstractions.ServiceBus;
+    using Microsoft.Extensions.Logging;
+
+    internal class KafkaEventBusSubscriber : IEventBusSubscriber
     {
-        private readonly IConsumer<string, string> _consumer;
-        private readonly ILogger _logger;
-        private readonly IEventProvider _eventProvider;
-        private readonly IMediator _mediator;
+        private readonly IConsumer<string, string> consumer;
+        private readonly ILogger logger;
+        private readonly IEventProvider eventProvider;
+        private readonly IMediator mediator;
 
         public KafkaEventBusSubscriber(IConsumer<string, string> consumer, ILogger<KafkaEventBusSubscriber> logger,
             IEventProvider eventProvider, IMediator mediator)
         {
-            _consumer = consumer;
-            _logger = logger;
-            _eventProvider = eventProvider;
-            _mediator = mediator;
+            this.consumer = consumer;
+            this.logger = logger;
+            this.eventProvider = eventProvider;
+            this.mediator = mediator;
         }
 
         public async Task SubscribeEventAsync(string topicName, CancellationToken cancellationToken)
         {
-            using var consumer = _consumer;
+            using var consumer = this.consumer;
             consumer.Subscribe(topicName);
 
             try
@@ -39,7 +40,7 @@ namespace Messaging.Infrastructure.ServiceBus
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"Error consuming message: {e.Message} {e.StackTrace}");
+                this.logger.LogInformation($"Error consuming message: {e.Message} {e.StackTrace}");
                 consumer.Close();
             }
         }
@@ -51,18 +52,18 @@ namespace Messaging.Infrastructure.ServiceBus
                 var message = consumer.Consume(cancellationToken);
                 if (message.Message == null) return;
 
-                var eventType = _eventProvider.GetByKey(message.Key);
-                var @event = JsonSerializer.Deserialize(message?.Value, eventType);
+                var eventType = this.eventProvider.GetByKey(message.Key);
+                var @event = JsonSerializer.Deserialize(message.Value, eventType);
                 if (@event == null) return;
 
-                await _mediator.Publish(@event, cancellationToken)
+                await this.mediator.Publish(@event, cancellationToken)
                     .ConfigureAwait(false);
 
                 consumer.Commit();
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"Error consuming message: {e.Message} {e.StackTrace}");
+                this.logger.LogInformation($"Error consuming message: {e.Message} {e.StackTrace}");
             }
         }
     }

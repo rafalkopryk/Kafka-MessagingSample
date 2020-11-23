@@ -1,19 +1,9 @@
-﻿using Messaging.Core.Domain.Abstractions;
-using System;
-
-namespace Messaging.PublishService.Domain.Events
+﻿namespace Messaging.PublishService.Domain.Events
 {
-    public class MessagePublishedEvent : IEvent
-    {
-        public MessagePublishedEvent(string author, string content, DateTime date)
-        {
-            Author = author;
-            Content = content;
-            Date = date;
-        }
+    using System;
 
-        public string Author { get; }
-        public string Content { get; }
-        public DateTime Date { get; }
-    }
+    using Messaging.Core.Domain.Abstractions;
+
+    public record MessagePublishedEvent(string Author, string Content, DateTime Date)
+        : IEvent;
 }

@@ -1,7 +1,7 @@
 ﻿namespace Messaging.Common.Const
 {
-    public class Topics
+    public static class Topics
     {
-        public static string PublishedMessage = nameof(PublishedMessage);
+        public const string PublishedMessage = nameof(PublishedMessage);
     }
 }

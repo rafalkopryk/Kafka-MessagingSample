@@ -1,13 +1,14 @@
-﻿using Messaging.Core.Domain.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Messaging.Infrastructure
+﻿namespace Messaging.Infrastructure
 {
-    public class EventProvider : IEventProvider
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
+    using Messaging.Core.Domain.Abstractions;
+
+    internal class EventProvider : IEventProvider
     {
-        private readonly IList<(string Key, Type Type)> _registeredEvents = new List<(string, Type)>();
+        private readonly IList<(string Key, Type Type)> registeredEvents = new List<(string, Type)>();
 
         public void RegisterEvent(params (string key, Type type)[] events)
         {
@@ -16,16 +17,16 @@ namespace Messaging.Infrastructure
                 if (!typeof(IEvent).IsAssignableFrom(@event.type))
                     continue;
 
-                if (_registeredEvents.Any(x => x.Key == @event.key))
+                if (this.registeredEvents.Any(x => x.Key == @event.key))
                     continue;
 
-                _registeredEvents.Add(@event);
+                this.registeredEvents.Add(@event);
             }
         }
 
         public Type GetByKey(string key)
         {
-            return _registeredEvents
+            return this.registeredEvents
                 .FirstOrDefault(x => x.Key == key)
                 .Type;
         }

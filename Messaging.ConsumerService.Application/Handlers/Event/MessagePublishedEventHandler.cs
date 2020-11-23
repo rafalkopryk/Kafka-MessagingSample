@@ -1,13 +1,14 @@
-﻿using Messaging.ConsumerService.Domain.Events;
-using Messaging.Core.Application.Abstractions.Handlers;
-using System;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Messaging.ConsumerService.Application.Handlers.Event
+﻿namespace Messaging.ConsumerService.Application.Handlers.Event
 {
-    public class MessagePublishedEventHandler : IEventHandler<MessagePublishedEvent>
+    using System;
+    using System.Text.Json;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    using Messaging.ConsumerService.Domain.Events;
+    using Messaging.Core.Application.Abstractions.Handlers;
+
+    internal class MessagePublishedEventHandler : IEventHandler<MessagePublishedEvent>
     {
         public async Task Handle(MessagePublishedEvent notification, CancellationToken cancellationToken)
         {

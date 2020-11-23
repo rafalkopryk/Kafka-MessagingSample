@@ -1,16 +1,7 @@
-﻿using Messaging.Core.Domain.Abstractions;
-
-namespace Messaging.PublishService.Domain.Commands
+﻿namespace Messaging.PublishService.Domain.Commands
 {
-    public class PublishMessageCommand : ICommand
-    {
-        public PublishMessageCommand(string author, string content)
-        {
-            Author = author;
-            Content = content;
-        }
+    using Messaging.Core.Domain.Abstractions;
 
-        public string Author { get; }
-        public string Content { get; }
-    }
+    public record PublishMessageCommand(string Author, string Content)
+        : ICommand;
 }

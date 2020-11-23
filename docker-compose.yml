@@ -1,0 +1,64 @@
+version: '3.4'
+
+services:
+  messaging.publishservice.api:
+    image: ${DOCKER_REGISTRY-}messagingpublishserviceapi
+    build:
+      context: .
+      dockerfile: Messaging.PublishService.Api/Dockerfile
+    container_name: messaging-publishservice
+    networks:
+    - kafkanetwork
+    depends_on:
+      - kafka
+    environment:
+        ASPNETCORE_ENVIRONMENT: Development
+        EventBus__bootstrapservers: kafka:9092
+        EventBus__groupid: messaging
+
+  messaging.consumerservice.workerservice:
+    image: ${DOCKER_REGISTRY-}messagingconsumerserviceworkerservice
+    build:
+      context: .
+      dockerfile: Messaging.ConsumerService.WorkerService/Dockerfile
+    container_name: messaging-consumerservice
+    networks:
+    - kafkanetwork
+    depends_on:
+      - kafka
+    environment:
+        ASPNETCORE_ENVIRONMENT: Development
+        EventBus__bootstrapservers: kafka:9092
+        EventBus__groupid: messaging
+        EventBus__enableautocommit: "false"
+        EventBus__statisticsintervalms: 5000
+        EventBus__autooffsetreset: earliest
+        EventBus__enablepartitioneof: "true"
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    networks:
+    - kafkanetwork
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: "wurstmeister/kafka"
+    ports:
+     - "9092:9092"
+    hostname: kafka
+    networks:
+    - kafkanetwork
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+        KAFKA_ADVERTISED_HOST_NAME: kafka
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_CREATE_TOPICS: "PublishedMessage:1:3"
+        KAFKA_ADVERTISED_PORT: 9092
+
+networks:
+  kafkanetwork:
+    driver: bridge

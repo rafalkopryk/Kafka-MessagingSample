@@ -1,11 +1,11 @@
-using Messaging.Common.Extensions;
-using Messaging.ConsumerService.Application.Extensions;
-using Messaging.Infrastructure.Extensions;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-
 namespace Messaging.ConsumerService.WorkerService
 {
+    using Messaging.Common.Extensions;
+    using Messaging.ConsumerService.Application.Extensions;
+    using Messaging.Infrastructure.Extensions;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -17,9 +17,9 @@ namespace Messaging.ConsumerService.WorkerService
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddConsumerServiceEventHandlers();
-                    services.AddMediatR();
-                    services.AddKafkaEventBusSubscriber(hostContext.Configuration);
+                    services.ConfigureConsumerServiceApplication();
+                    services.ConfigureMediatR();
+                    services.ConfigureMessagingInfrastructure(hostContext.Configuration);
                     services.AddHostedService<ConsumerService>();
                 });
     }

@@ -1,8 +1,8 @@
-﻿using CSharpFunctionalExtensions;
-using Microsoft.AspNetCore.Mvc;
-
-namespace Messaging.PublishService.Api.Utils
+﻿namespace Messaging.PublishService.Api.Utils
 {
+    using CSharpFunctionalExtensions;
+    using Microsoft.AspNetCore.Mvc;
+
     public class BaseController : Controller
     {
         protected new IActionResult Ok()
@@ -15,9 +15,19 @@ namespace Messaging.PublishService.Api.Utils
             return base.Ok(Envelope.Ok(result));
         }
 
+        protected new IActionResult Accepted()
+        {
+            return base.Accepted(Envelope.Ok());
+        }
+
         protected IActionResult Error(string errorMessage)
         {
             return BadRequest(Envelope.Error(errorMessage));
+        }
+
+        protected IActionResult Error(Result result)
+        {
+            return this.Error(result.Error);
         }
 
         protected IActionResult FromResult(Result result)
@@ -25,4 +35,6 @@ namespace Messaging.PublishService.Api.Utils
             return result.IsSuccess ? Ok() : Error(result.Error);
         }
     }
+
+
 }
