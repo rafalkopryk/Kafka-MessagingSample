@@ -12,7 +12,7 @@
 
     public static class InfrastructureExtensions
     {
-        public static void ConfigureMessagingInfrastructure (this IServiceCollection serviceCollection, IConfiguration configuration)
+        public static void AddMessagingInfrastructure (this IServiceCollection serviceCollection, IConfiguration configuration)
         {
             serviceCollection
                 .AddKafkaEventBusSubscriber(configuration)

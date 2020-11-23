@@ -17,9 +17,9 @@ namespace Messaging.ConsumerService.WorkerService
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.ConfigureConsumerServiceApplication();
+                    services.AddConsumerServiceApplication();
                     services.ConfigureMediatR();
-                    services.ConfigureMessagingInfrastructure(hostContext.Configuration);
+                    services.AddMessagingInfrastructure(hostContext.Configuration);
                     services.AddHostedService<ConsumerService>();
                 });
     }

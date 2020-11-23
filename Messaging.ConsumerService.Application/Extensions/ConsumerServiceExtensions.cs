@@ -7,7 +7,7 @@
 
     public static class ConsumerServiceExtensions
     {
-        public static void ConfigureConsumerServiceApplication(this IServiceCollection services)
+        public static void AddConsumerServiceApplication(this IServiceCollection services)
         {
             services.AddConsumerServiceEventHandlers();
         }

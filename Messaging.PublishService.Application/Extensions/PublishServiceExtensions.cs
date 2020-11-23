@@ -8,7 +8,7 @@
 
     public static class PublishServiceExtensions
     {
-        public static void ConfigurePublishServiceApplication(this IServiceCollection services)
+        public static void AddPublishServiceApplication(this IServiceCollection services)
         {
             services.AddPublishServiceCommandHandlers();
         }
