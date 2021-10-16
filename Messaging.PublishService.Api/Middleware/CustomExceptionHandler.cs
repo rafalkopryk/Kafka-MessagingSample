@@ -21,30 +21,6 @@ public class CustomExceptionHandler
         this.logger = logger;
     }
 
-    public void Something(object input)
-    {
-        if (input is not null)
-        {
-            throw new ArgumentNullException(nameof(input));
-        }
-
-        ////
-    }
-
-    public void Something(string input)
-    {
-        if (input is "Kurwa" and not "Patryk")
-        {
-
-        }
-
-        if (input == "Kurwa" && input != "Patryk")
-        {
-
-        }
-    }
-
-
     public async Task Invoke(HttpContext httpContext)
     {
         try
