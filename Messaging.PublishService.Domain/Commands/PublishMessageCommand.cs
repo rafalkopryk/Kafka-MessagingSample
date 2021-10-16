@@ -1,7 +1,7 @@
-﻿namespace Messaging.PublishService.Domain.Commands
-{
-    using Messaging.Core.Domain.Abstractions;
+﻿namespace Messaging.PublishService.Domain.Commands;
 
-    public record PublishMessageCommand(string Author, string Content)
-        : ICommand;
-}
+using Messaging.Core.Domain.Abstractions;
+
+public record PublishMessageCommand(string Author, string Content)
+    : ICommand;
+

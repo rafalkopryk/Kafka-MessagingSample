@@ -1,22 +1,23 @@
-﻿namespace Messaging.ConsumerService.Application.Extensions
+﻿namespace Messaging.ConsumerService.Application.Extensions;
+
+using MediatR;
+using Messaging.ConsumerService.Application.Handlers.Event;
+using Messaging.ConsumerService.Domain.Events;
+using Microsoft.Extensions.DependencyInjection;
+
+public static class ConsumerServiceExtensions
 {
-    using MediatR;
-    using Messaging.ConsumerService.Application.Handlers.Event;
-    using Messaging.ConsumerService.Domain.Events;
-    using Microsoft.Extensions.DependencyInjection;
-
-    public static class ConsumerServiceExtensions
+    public static void AddConsumerServiceApplication(this IServiceCollection services)
     {
-        public static void AddConsumerServiceApplication(this IServiceCollection services)
-        {
-            services.AddConsumerServiceEventHandlers();
-        }
+        services.AddMediatR(typeof(MessagePublishedEvent));
 
-        private static IServiceCollection AddConsumerServiceEventHandlers(this IServiceCollection services)
-        {
-            services.AddTransient<INotificationHandler<MessagePublishedEvent>, MessagePublishedEventHandler>();
+        services.AddConsumerServiceEventHandlers();
+    }
 
-            return services;
-        }
+    private static IServiceCollection AddConsumerServiceEventHandlers(this IServiceCollection services)
+    {
+        services.AddTransient<INotificationHandler<MessagePublishedEvent>, MessagePublishedEventHandler>();
+
+        return services;
     }
 }

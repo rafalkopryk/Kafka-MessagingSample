@@ -1,32 +1,30 @@
-﻿namespace Messaging.Infrastructure.ServiceBus
+﻿namespace Messaging.Infrastructure.ServiceBus;
+
+using System.Text.Json;
+using System.Threading.Tasks;
+
+using Confluent.Kafka;
+using Messaging.Core.Application.Abstractions.ServiceBus;
+using Messaging.Core.Domain.Abstractions;
+
+internal class KafkaEventBusPublisher : IEventBusPublisher
 {
-    using System.Text.Json;
-    using System.Threading.Tasks;
+    private readonly IProducer<string, string> producer;
 
-    using Confluent.Kafka;
-    using Messaging.Core.Application.Abstractions.ServiceBus;
-    using Messaging.Core.Domain.Abstractions;
-
-    internal class KafkaEventBusPublisher : IEventBusPublisher
+    public KafkaEventBusPublisher(IProducer<string, string> producer)
     {
-        private readonly IProducer<string, string> producer;
+        this.producer = producer;
+    }
 
-        public KafkaEventBusPublisher(IProducer<string, string> producer)
+    public async Task PublishAsync<TEvent>(TEvent @event, string topicName) where TEvent : IEvent
+    {
+        var data = JsonSerializer.Serialize(@event);
+        var message = new Message<string, string>
         {
-            this.producer = producer;
-        }
+            Key = @event.GetType().Name,
+            Value = data
+        };
 
-        public async Task PublishAsync<TEvent>(TEvent @event, string topicName) where TEvent : IEvent
-        {
-            var data = JsonSerializer.Serialize(@event);
-            var message = new Message<string, string>
-            {
-                Key = @event.GetType().Name,
-                Value = data
-            };
-
-            await this.producer.ProduceAsync(topicName, message)
-                .ConfigureAwait(false);
-        }
+        await this.producer.ProduceAsync(topicName, message);
     }
 }

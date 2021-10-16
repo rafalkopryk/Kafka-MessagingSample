@@ -1,23 +1,25 @@
-﻿namespace Messaging.ConsumerService.Application.Extensions
+﻿namespace Messaging.ConsumerService.Application.Extensions;
+
+using CSharpFunctionalExtensions;
+using MediatR;
+using Messaging.PublishService.Application.Handlers.Command;
+using Messaging.PublishService.Domain.Commands;
+using Microsoft.Extensions.DependencyInjection;
+
+public static class PublishServiceExtensions
 {
-    using CSharpFunctionalExtensions;
-    using MediatR;
-    using Messaging.PublishService.Application.Handlers.Command;
-    using Messaging.PublishService.Domain.Commands;
-    using Microsoft.Extensions.DependencyInjection;
-
-    public static class PublishServiceExtensions
+    public static void AddPublishServiceApplication(this IServiceCollection services)
     {
-        public static void AddPublishServiceApplication(this IServiceCollection services)
-        {
-            services.AddPublishServiceCommandHandlers();
-        }
+        services.AddMediatR(typeof(PublishMessageCommand));
 
-        private static IServiceCollection AddPublishServiceCommandHandlers(this IServiceCollection services)
-        {
-            services.AddScoped<IRequestHandler<PublishMessageCommand, Result>, PublishMessageHandler>();
+        services.AddPublishServiceCommandHandlers();
+    }
 
-            return services;
-        }
+    private static IServiceCollection AddPublishServiceCommandHandlers(this IServiceCollection services)
+    {
+        services.AddScoped<IRequestHandler<PublishMessageCommand, Result>, PublishMessageHandler>();
+
+        return services;
     }
 }
+

@@ -1,11 +1,11 @@
-﻿namespace Messaging.Infrastructure
+﻿namespace Messaging.Infrastructure;
+
+using System;
+
+public interface IEventProvider
 {
-    using System;
+    void RegisterEvent(params (string key, Type type)[] events);
 
-    public interface IEventProvider
-    {
-        void RegisterEvent(params (string key, Type type)[] events);
-
-        Type GetByKey(string key);
-    }
+    Type GetByKey(string key);
 }
+

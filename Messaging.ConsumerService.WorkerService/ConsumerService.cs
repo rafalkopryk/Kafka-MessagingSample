@@ -1,34 +1,33 @@
-namespace Messaging.ConsumerService.WorkerService
+namespace Messaging.ConsumerService.WorkerService;
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Messaging.Common.Const;
+using Messaging.Core.Application.Abstractions.ServiceBus;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+internal class ConsumerService : BackgroundService
 {
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
+    private readonly ILogger logger;
+    private readonly IEventBusSubscriber busSubscriber;
 
-    using Messaging.Common.Const;
-    using Messaging.Core.Application.Abstractions.ServiceBus;
-    using Microsoft.Extensions.Hosting;
-    using Microsoft.Extensions.Logging;
-
-    public class ConsumerService : BackgroundService
+    public ConsumerService(ILogger<ConsumerService> logger, IEventBusSubscriber busSubscriber)
     {
-        private readonly ILogger logger;
-        private readonly IEventBusSubscriber busSubscriber;
+        this.logger = logger;
+        this.busSubscriber = busSubscriber;
+    }
 
-        public ConsumerService(ILogger<ConsumerService> logger, IEventBusSubscriber busSubscriber)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
         {
-            this.logger = logger;
-            this.busSubscriber = busSubscriber;
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                this.logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await this.busSubscriber.SubscribeEventAsync(Topics.PublishedMessage, stoppingToken)
-                    .ConfigureAwait(false);
-                await Task.Delay(1000, stoppingToken).ConfigureAwait(false);
-            }
+            this.logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+            await this.busSubscriber.SubscribeEventAsync(Topics.PublishedMessage, stoppingToken);
+            await Task.Delay(1000, stoppingToken).ConfigureAwait(false);
         }
     }
 }
+

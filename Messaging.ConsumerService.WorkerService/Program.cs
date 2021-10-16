@@ -1,26 +1,16 @@
-namespace Messaging.ConsumerService.WorkerService
-{
-    using Messaging.Common.Extensions;
-    using Messaging.ConsumerService.Application.Extensions;
-    using Messaging.Infrastructure.Extensions;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Hosting;
+using Messaging.ConsumerService.Application.Extensions;
+using Messaging.ConsumerService.WorkerService;
+using Messaging.Infrastructure.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-    public static class Program
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((hostContext, services) =>
     {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
+        services.AddConsumerServiceApplication();
+        services.AddMessagingInfrastructure(hostContext.Configuration);
+        services.AddHostedService<ConsumerService>();
+    })
+    .Build();
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddConsumerServiceApplication();
-                    services.ConfigureMediatR();
-                    services.AddMessagingInfrastructure(hostContext.Configuration);
-                    services.AddHostedService<ConsumerService>();
-                });
-    }
-}
+await host.RunAsync();

@@ -1,39 +1,38 @@
-﻿namespace Messaging.PublishService.Application.Handlers.Command
+﻿namespace Messaging.PublishService.Application.Handlers.Command;
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+using CSharpFunctionalExtensions;
+using Messaging.Common.Const;
+using Messaging.Core.Application.Abstractions.Handlers;
+using Messaging.Core.Application.Abstractions.ServiceBus;
+using Messaging.PublishService.Domain.Commands;
+using Messaging.PublishService.Domain.Events;
+
+internal class PublishMessageHandler : ICommandHandler<PublishMessageCommand>
 {
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
+    private readonly IEventBusPublisher busPublisher;
 
-    using CSharpFunctionalExtensions;
-    using Messaging.Common.Const;
-    using Messaging.Core.Application.Abstractions.Handlers;
-    using Messaging.Core.Application.Abstractions.ServiceBus;
-    using Messaging.PublishService.Domain.Commands;
-    using Messaging.PublishService.Domain.Events;
-
-    internal class PublishMessageHandler : ICommandHandler<PublishMessageCommand>
+    public PublishMessageHandler(IEventBusPublisher busPublisher)
     {
-        private readonly IEventBusPublisher busPublisher;
+        this.busPublisher = busPublisher;
+    }
 
-        public PublishMessageHandler(IEventBusPublisher busPublisher)
+    public async Task<Result> Handle(PublishMessageCommand request, CancellationToken cancellationToken)
+    {
+        try
         {
-            this.busPublisher = busPublisher;
+            var messagePublishedEvent = new MessagePublishedEvent(request.Author, request.Content, DateTime.UtcNow);
+            await this.busPublisher.PublishAsync(messagePublishedEvent, Topics.PublishedMessage);
+
+            return Result.Success();
         }
-
-        public async Task<Result> Handle(PublishMessageCommand request, CancellationToken cancellationToken)
+        catch (Exception e)
         {
-            try
-            {
-                var messagePublishedEvent = new MessagePublishedEvent(request.Author, request.Content, DateTime.UtcNow);
-                await this.busPublisher.PublishAsync(messagePublishedEvent, Topics.PublishedMessage)
-                    .ConfigureAwait(false);
-                
-                return Result.Success();
-            }
-            catch (Exception e)
-            {
-                return Result.Failure(e.ToString());
-            }
+            return Result.Failure(e.ToString());
         }
     }
 }
+
