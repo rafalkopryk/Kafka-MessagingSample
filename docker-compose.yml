@@ -2,11 +2,11 @@ version: '3.4'
 
 services:
   messaging.publishservice.api:
-    image: ${DOCKER_REGISTRY-}messagingpublishserviceapi
+    image: ${DOCKER_REGISTRY-}messagingpublisherapi
     build:
       context: .
-      dockerfile: Messaging.PublishService.Api/Dockerfile
-    container_name: messaging-publishservice
+      dockerfile: Modules/Publisher/Publisher.Api/Dockerfile
+    container_name: messaging-publisher
     networks:
     - kafkanetwork
     depends_on:
@@ -17,11 +17,11 @@ services:
         EventBus__groupid: messaging
 
   messaging.consumerservice.workerservice:
-    image: ${DOCKER_REGISTRY-}messagingconsumerserviceworkerservice
+    image: ${DOCKER_REGISTRY-}messagingconsumerworkerservice
     build:
       context: .
-      dockerfile: Messaging.ConsumerService.WorkerService/Dockerfile
-    container_name: messaging-consumerservice
+      dockerfile: Modules/Consumer/Consumer.WorkerService/Dockerfile
+    container_name: messaging-consumer
     networks:
     - kafkanetwork
     depends_on:
@@ -56,8 +56,8 @@ services:
     environment:
         KAFKA_ADVERTISED_HOST_NAME: kafka
         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-        KAFKA_CREATE_TOPICS: "PublishedMessage:1:3"
         KAFKA_ADVERTISED_PORT: 9092
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true" 
 
 networks:
   kafkanetwork:
