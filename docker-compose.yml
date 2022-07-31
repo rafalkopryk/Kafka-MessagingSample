@@ -17,6 +17,7 @@ services:
         Elasticsearch__Url: http://elastic:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging
+        ElasticApm__ServerUrl: http://apm:8200
 
   messaging.consumerservice.workerservice:
     image: ${DOCKER_REGISTRY-}messagingconsumerworkerservice
@@ -38,6 +39,7 @@ services:
         EventBus__statisticsintervalms: 5000
         EventBus__autooffsetreset: earliest
         EventBus__enablepartitioneof: "true"
+        ElasticApm__ServerUrl: http://apm:8200
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -87,6 +89,28 @@ services:
             - elasticsearchnetwork
         depends_on:
             - elasticsearch
+
+  apm:
+    image: docker.elastic.co/apm/apm-server:7.17.5
+    container_name: apm
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"]
+    cap_drop: ["ALL"]
+    ports:
+      - 8200:8200
+    networks:
+        - elasticsearchnetwork 
+    depends_on:
+        - elasticsearch
+        - kibana
+    command: >
+      apm-server -e
+         -E apm-server.rum.enabled=true
+         -E setup.kibana.host=kibana:5601
+         -E setup.template.settings.index.number_of_replicas=0
+         -E apm-server.kibana.enabled=true
+         -E apm-server.kibana.host=kibana:5601
+         -E output.elasticsearch.hosts=["elastic:9200"]
+
 volumes:
     elasticsearchdata:
 

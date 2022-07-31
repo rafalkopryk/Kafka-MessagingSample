@@ -1,5 +1,4 @@
 ﻿namespace Publisher.Api.Utils;
-
 using System;
 
 public class Envelope<T>

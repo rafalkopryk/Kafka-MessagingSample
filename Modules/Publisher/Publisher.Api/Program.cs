@@ -1,7 +1,13 @@
 using Common.Infrastructure.Extensions;
+using Elastic.Apm;
+using Elastic.Apm.AspNetCore;
+using Elastic.Apm.AspNetCore.DiagnosticListener;
+using Elastic.Apm.SerilogEnricher;
+using Elastic.CommonSchema.Serilog;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Publisher.Api.Utils;
 using Publisher.Application.Extensions;
 using Serilog;
 using Serilog.Exceptions;
@@ -15,11 +21,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, configuration) => configuration
     .Enrich.FromLogContext()
     .Enrich.WithExceptionDetails()
+    .Enrich.WithElasticApmCorrelationInfo()
     .WriteTo.Console()
     .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(context.Configuration["Elasticsearch:Url"]))
     {
         IndexFormat = $"applogs-{context.Configuration["AppName"]}-{DateTimeOffset.Now:yyy-MM-dd}",
         AutoRegisterTemplate = true,
+        //AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7
     })
     .ReadFrom.Configuration(context.Configuration));
 
@@ -44,5 +52,12 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseSerilogRequestLogging(opts =>
+{
+    opts.EnrichDiagnosticContext = LogEnricherExtensions.EnrichFromRequest;
+});
+
+app.UseElasticApm(app.Configuration);
 
 app.Run();
