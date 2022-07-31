@@ -5,16 +5,21 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Application.CQRS;
+using Microsoft.Extensions.Logging;
 
 internal class MessagePublishedEventHandler : IEventHandler<MessagePublishedEvent>
 {
+    private readonly ILogger<MessagePublishedEventHandler> _logger;
+
+    public MessagePublishedEventHandler(ILogger<MessagePublishedEventHandler> logger)
+    {
+        _logger = logger;
+    }
+
     public async Task Handle(MessagePublishedEvent notification, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(notification);
-        await Console.Out.WriteLineAsync("The message has been handled:")
-            .ConfigureAwait(false);
-        await Console.Out.WriteLineAsync(json)
-            .ConfigureAwait(false);
+        _logger.LogInformation("Message published: {notification}", json);
     }
 }
 

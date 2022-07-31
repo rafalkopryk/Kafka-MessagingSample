@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="1.9.0" />
+    <PackageReference Include="Elastic.Apm" Version="1.16.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -23,6 +23,8 @@ builder.Host.UseSerilog((context, configuration) => configuration
     })
     .ReadFrom.Configuration(context.Configuration));
 
+builder.Services.AddControllers();
+
 builder.Services.AddConsumerApplication();
 builder.Services.AddEventBus(builder.Configuration);
 builder.Services.AddHostedService<ConsumerService>();
@@ -40,36 +42,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseAuthorization();
-
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-       new WeatherForecast
-       (
-           DateTime.Now.AddDays(index),
-           Random.Shared.Next(-20, 55),
-           summaries[Random.Shared.Next(summaries.Length)]
-       ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers();
 
 app.UseSerilogRequestLogging();
 
 app.UseElasticApm(app.Configuration);
 
 app.Run();
-
-internal record WeatherForecast(DateTime Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

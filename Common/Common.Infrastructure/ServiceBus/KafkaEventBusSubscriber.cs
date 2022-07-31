@@ -1,6 +1,8 @@
 ﻿namespace Common.Infrastructure.ServiceBus;
 
 using System;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +11,8 @@ using Common.Application.Extensions;
 using Common.Application.ServiceBus;
 using Common.Infrastructure;
 using Confluent.Kafka;
+using Elastic.Apm;
+using Elastic.Apm.Api;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -39,6 +43,7 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
                 await ConsumeNextEvent(consumer, cancellationToken);
             }
         }
@@ -55,14 +60,24 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
         {
             var message = consumer.Consume(cancellationToken);
             if (message.Message == null) return;
+            
+            var traceId = Encoding.ASCII.GetString(message.Message.Headers.FirstOrDefault(x => x.Key == "trace.Id")?.GetValueBytes());
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
 
-            var eventType = _eventProvider.GetByKey(message.Message.Key);
-            var @event = JsonSerializer.Deserialize(message.Message.Value, eventType);
-            if (@event == null) return;
+            await Agent.Tracer.CaptureTransaction(message.Topic, ApiConstants.TypeMessaging, async () =>
+            {
+                var eventType = _eventProvider.GetByKey(message.Message.Key);
+                var @event = JsonSerializer.Deserialize(message.Message.Value, eventType);
+                if (@event == null) return;
 
-            await _mediator.Publish(@event, cancellationToken);
+                consumer.Commit();
 
-            consumer.Commit();
+                await _mediator.Publish(@event, cancellationToken);
+
+                Agent.Tracer.CurrentTransaction.Labels.Add("topic", message.Topic);
+                Agent.Tracer.CurrentTransaction.Labels.Add("body", message.Message.Value);
+            },
+            DistributedTracingData.TryDeserializeFromString(traceId));
         }
         catch (Exception e)
         {

@@ -16,7 +16,7 @@ services:
         ASPNETCORE_ENVIRONMENT: Development
         Elasticsearch__Url: http://elastic:9200
         EventBus__bootstrapservers: kafka:9092
-        EventBus__groupid: messaging
+        EventBus__groupid: messaging-publisher
         ElasticApm__ServerUrl: http://apm:8200
 
   messaging.consumerservice.api:
@@ -34,7 +34,7 @@ services:
         ASPNETCORE_ENVIRONMENT: Development
         Elasticsearch__Url: http://elastic:9200
         EventBus__bootstrapservers: kafka:9092
-        EventBus__groupid: messaging
+        EventBus__groupid: messaging-consumer
         EventBus__enableautocommit: "false"
         EventBus__statisticsintervalms: 5000
         EventBus__autooffsetreset: earliest
