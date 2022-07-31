@@ -64,7 +64,7 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
             var traceId = Encoding.ASCII.GetString(message.Message.Headers.FirstOrDefault(x => x.Key == "trace.Id")?.GetValueBytes());
             await Task.Delay(TimeSpan.FromMilliseconds(100));
 
-            await Agent.Tracer.CaptureTransaction(message.Topic, ApiConstants.TypeMessaging, async () =>
+            await Agent.Tracer.CaptureTransaction($"Consume {message.Topic}", ApiConstants.TypeMessaging, async () =>
             {
                 var eventType = _eventProvider.GetByKey(message.Message.Key);
                 var @event = JsonSerializer.Deserialize(message.Message.Value, eventType);

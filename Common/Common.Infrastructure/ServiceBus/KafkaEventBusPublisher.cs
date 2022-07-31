@@ -9,6 +9,7 @@ using Common.Application.Extensions;
 using Common.Application.ServiceBus;
 using Confluent.Kafka;
 using Elastic.Apm;
+using Elastic.Apm.Api;
 using Microsoft.Extensions.Logging;
 
 internal class KafkaEventBusPublisher : IEventBusPublisher
@@ -28,7 +29,7 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
         var data = JsonSerializer.Serialize(@event);
         var eventEnvelope = typeof(TEvent).GetEventEnvelopeAttribute() ?? throw new ArgumentNullException(nameof(EventEnvelopeAttribute));
 
-        await Agent.Tracer.CurrentTransaction.CaptureSpan(eventEnvelope.Topic, "Kafka produce", async () =>
+        await Agent.Tracer.CurrentTransaction.CaptureSpan($"Produce {eventEnvelope.Topic}", ApiConstants.TypeMessaging, async () =>
         {
             var message = new Message<string, string>
             {
