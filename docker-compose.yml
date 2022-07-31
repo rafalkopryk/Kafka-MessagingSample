@@ -1,4 +1,4 @@
-version: '3.4'
+version: '3.8'
 
 services:
   messaging.publishservice.api:
@@ -8,11 +8,13 @@ services:
       dockerfile: Modules/Publisher/Publisher.Api/Dockerfile
     container_name: messaging-publisher
     networks:
-    - kafkanetwork
+      - kafkanetwork
+      - elasticsearchnetwork
     depends_on:
       - kafka
     environment:
         ASPNETCORE_ENVIRONMENT: Development
+        Elasticsearch__Url: http://elastic:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging
 
@@ -23,11 +25,13 @@ services:
       dockerfile: Modules/Consumer/Consumer.WorkerService/Dockerfile
     container_name: messaging-consumer
     networks:
-    - kafkanetwork
+      - kafkanetwork
+      - elasticsearchnetwork
     depends_on:
       - kafka
     environment:
         ASPNETCORE_ENVIRONMENT: Development
+        Elasticsearch__Url: http://elastic:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging
         EventBus__enableautocommit: "false"
@@ -59,6 +63,35 @@ services:
         KAFKA_ADVERTISED_PORT: 9092
         KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true" 
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.5
+    container_name: elastic
+    environment:
+      - node.name=elastic
+      - discovery.type=single-node
+    ports:
+        - "9200:9200"
+        - "9300:9300"
+    volumes:
+        - type: bind
+          source: ./elasticsearchdata
+          target: /usr/share/elasticsearch/data2
+    networks:
+        - elasticsearchnetwork
+  kibana:
+        image: docker.elastic.co/kibana/kibana:7.17.5
+        container_name: kibana
+        ports:
+            - "5601:5601"
+        networks:
+            - elasticsearchnetwork
+        depends_on:
+            - elasticsearch
+volumes:
+    elasticsearchdata:
+
 networks:
   kafkanetwork:
+    driver: bridge
+  elasticsearchnetwork:
     driver: bridge

@@ -7,14 +7,18 @@ using Common.Application.CQRS;
 using Common.Application.Extensions;
 using Common.Application.ServiceBus;
 using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 
 internal class KafkaEventBusPublisher : IEventBusPublisher
 {
-    private readonly IProducer<string, string> producer;
+    private readonly IProducer<string, string> _producer;
 
-    public KafkaEventBusPublisher(IProducer<string, string> producer)
+    private readonly ILogger<KafkaEventBusPublisher> _logger;
+
+    public KafkaEventBusPublisher(IProducer<string, string> producer, ILogger<KafkaEventBusPublisher> logger)
     {
-        this.producer = producer;
+        _producer = producer;
+        _logger = logger;
     }
 
     public async Task PublishAsync<TEvent>(TEvent @event) where TEvent : IEvent
@@ -29,6 +33,8 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
             Value = data
         };
 
-        await producer.ProduceAsync(eventEnvelope.Topic, message);
+        await _producer.ProduceAsync(eventEnvelope.Topic, message);
+
+        _logger.LogInformation("Publish event on {Topic}", eventEnvelope.Topic);
     }
 }
