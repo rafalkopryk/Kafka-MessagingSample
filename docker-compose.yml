@@ -19,11 +19,11 @@ services:
         EventBus__groupid: messaging
         ElasticApm__ServerUrl: http://apm:8200
 
-  messaging.consumerservice.workerservice:
-    image: ${DOCKER_REGISTRY-}messagingconsumerworkerservice
+  messaging.consumerservice.api:
+    image: ${DOCKER_REGISTRY-}messagingconsumerapi
     build:
       context: .
-      dockerfile: Modules/Consumer/Consumer.WorkerService/Dockerfile
+      dockerfile: Modules/Consumer/Consumer.Api/Dockerfile
     container_name: messaging-consumer
     networks:
       - kafkanetwork

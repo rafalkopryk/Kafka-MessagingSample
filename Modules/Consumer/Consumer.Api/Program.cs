@@ -1,18 +1,11 @@
 using Common.Infrastructure.Extensions;
-using Elastic.Apm;
+using Consumer.Application.Extensions;
+using Consumer.WorkerService;
 using Elastic.Apm.AspNetCore;
-using Elastic.Apm.AspNetCore.DiagnosticListener;
 using Elastic.Apm.SerilogEnricher;
-using Elastic.CommonSchema.Serilog;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Publisher.Api.Utils;
-using Publisher.Application.Extensions;
 using Serilog;
 using Serilog.Exceptions;
 using Serilog.Sinks.Elasticsearch;
-using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,15 +23,16 @@ builder.Host.UseSerilog((context, configuration) => configuration
     })
     .ReadFrom.Configuration(context.Configuration));
 
-builder.Services.AddControllers();
-
+builder.Services.AddConsumerApplication();
 builder.Services.AddEventBus(builder.Configuration);
-builder.Services.AddPublisherApplication();
+builder.Services.AddHostedService<ConsumerService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Configure the HTTP request pipeline.
 
 if (app.Environment.IsDevelopment())
 {
@@ -46,17 +40,36 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
-app.MapControllers();
+app.UseHttpsRedirection();
 
-app.UseSerilogRequestLogging(opts =>
+var summaries = new[]
 {
-    opts.EnrichDiagnosticContext = LogEnricherExtensions.EnrichFromRequest;
-});
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
+
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast = Enumerable.Range(1, 5).Select(index =>
+       new WeatherForecast
+       (
+           DateTime.Now.AddDays(index),
+           Random.Shared.Next(-20, 55),
+           summaries[Random.Shared.Next(summaries.Length)]
+       ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
+
+app.UseSerilogRequestLogging();
 
 app.UseElasticApm(app.Configuration);
 
 app.Run();
+
+internal record WeatherForecast(DateTime Date, int TemperatureC, string? Summary)
+{
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+}
