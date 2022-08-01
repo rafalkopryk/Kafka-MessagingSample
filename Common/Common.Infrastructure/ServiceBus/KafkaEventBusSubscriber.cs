@@ -60,12 +60,22 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
         {
             var message = consumer.Consume(cancellationToken);
             if (message.Message == null) return;
-            
-            var traceId = Encoding.ASCII.GetString(message.Message.Headers.FirstOrDefault(x => x.Key == "trace.Id")?.GetValueBytes());
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
+
+            var headers = message.Headers.ToDictionary(x => x.Key, y => Encoding.ASCII.GetString(y.GetValueBytes()));
+            var traceId = headers.FirstOrDefault(x => x.Key == "trace.Id").Value;
 
             await Agent.Tracer.CaptureTransaction($"Consume {message.Topic}", ApiConstants.TypeMessaging, async () =>
             {
+                Agent.Tracer.CurrentTransaction.Context.Message = new Message
+                {
+                    Body = message.Message.Value,
+                    Headers = headers,
+                    Queue = new Queue
+                    {
+                        Name = message.Topic,
+                    }
+                };
+
                 var eventType = _eventProvider.GetByKey(message.Message.Key);
                 var @event = JsonSerializer.Deserialize(message.Message.Value, eventType);
                 if (@event == null) return;
@@ -74,8 +84,8 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
 
                 await _mediator.Publish(@event, cancellationToken);
 
-                Agent.Tracer.CurrentTransaction.Labels.Add("topic", message.Topic);
-                Agent.Tracer.CurrentTransaction.Labels.Add("body", message.Message.Value);
+                //Agent.Tracer.CurrentTransaction.Labels.Add("topic", message.Topic);
+                //Agent.Tracer.CurrentTransaction.Labels.Add("body", message.Message.Value);
             },
             DistributedTracingData.TryDeserializeFromString(traceId));
         }
