@@ -29,8 +29,16 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
         var data = JsonSerializer.Serialize(@event);
         var eventEnvelope = typeof(TEvent).GetEventEnvelopeAttribute() ?? throw new ArgumentNullException(nameof(EventEnvelopeAttribute));
 
-        await Agent.Tracer.CurrentTransaction.CaptureSpan($"Produce {eventEnvelope.Topic}", ApiConstants.TypeMessaging, async () =>
+        await Agent.Tracer.CurrentTransaction.CaptureSpan($"Kafka SEND to { eventEnvelope.Topic}", ApiConstants.TypeMessaging, async () =>
         {
+            Agent.Tracer.CurrentSpan.Context.Message = new Message
+            {
+                Queue = new Queue
+                {
+                    Name = eventEnvelope.Topic
+                }
+            };
+
             var message = new Message<string, string>
             {
                 Key = eventEnvelope.Topic,
@@ -44,6 +52,6 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
             await _producer.ProduceAsync(eventEnvelope.Topic, message);
 
             _logger.LogInformation("Publish event on {Topic}", eventEnvelope.Topic);
-        });
+        }, "kafka");
     }
 }

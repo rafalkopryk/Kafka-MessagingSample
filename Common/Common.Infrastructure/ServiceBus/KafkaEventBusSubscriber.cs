@@ -64,7 +64,7 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
             var headers = message.Headers.ToDictionary(x => x.Key, y => Encoding.ASCII.GetString(y.GetValueBytes()));
             var traceId = headers.FirstOrDefault(x => x.Key == "trace.Id").Value;
 
-            await Agent.Tracer.CaptureTransaction($"Consume {message.Topic}", ApiConstants.TypeMessaging, async () =>
+            await Agent.Tracer.CaptureTransaction($"Kafka RECEIVE from { message.Topic}", ApiConstants.TypeMessaging, async () =>
             {
                 Agent.Tracer.CurrentTransaction.Context.Message = new Message
                 {
