@@ -31,11 +31,19 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
 
         await Agent.Tracer.CurrentTransaction.CaptureSpan($"Kafka SEND to { eventEnvelope.Topic}", ApiConstants.TypeMessaging, async () =>
         {
-            Agent.Tracer.CurrentSpan.Context.Message = new Message
+            Agent.Tracer.CurrentSpan.Context.Message ??= new Message
             {
                 Queue = new Queue
                 {
                     Name = eventEnvelope.Topic
+                }
+            };
+
+            Agent.Tracer.CurrentSpan.Context.Destination ??= new Destination
+            {
+                Service = new Destination.DestinationService
+                {
+                    Resource = "kafka"
                 }
             };
 
