@@ -43,7 +43,7 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                await Task.Delay(TimeSpan.FromMilliseconds(10));
                 await ConsumeNextEvent(consumer, cancellationToken);
             }
         }

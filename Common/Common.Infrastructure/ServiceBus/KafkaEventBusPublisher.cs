@@ -3,6 +3,7 @@
 using System;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Application.CQRS;
 using Common.Application.Extensions;
@@ -24,7 +25,7 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
         _logger = logger;
     }
 
-    public async Task PublishAsync<TEvent>(TEvent @event) where TEvent : IEvent
+    public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken) where TEvent : IEvent
     {
         var data = JsonSerializer.Serialize(@event);
         var eventEnvelope = typeof(TEvent).GetEventEnvelopeAttribute() ?? throw new ArgumentNullException(nameof(EventEnvelopeAttribute));
@@ -57,7 +58,7 @@ internal class KafkaEventBusPublisher : IEventBusPublisher
                 }
             };
 
-            await _producer.ProduceAsync(eventEnvelope.Topic, message);
+            await _producer.ProduceAsync(eventEnvelope.Topic, message, cancellationToken);
 
             _logger.LogInformation("Publish event on {Topic}", eventEnvelope.Topic);
         }, "kafka");

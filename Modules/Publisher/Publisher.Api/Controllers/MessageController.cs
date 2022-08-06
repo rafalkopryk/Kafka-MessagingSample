@@ -5,7 +5,6 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Publisher.Api.Dtos;
 using Publisher.Api.Utils;
 using Publisher.Application.UseCases.PublishMessage.Commands;
 
@@ -22,9 +21,9 @@ public class MessageController : BaseController
     [HttpPost]
     [ProducesResponseType(typeof(Envelope), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(Envelope), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> PublishMessage([FromBody] MessageInput request)
+    public async Task<IActionResult> PublishMessage([FromBody] PublishMessageCommand request)
     {
-        return await _mediator.Send(new PublishMessageCommand(request?.Author, request.Content))
+        return await _mediator.Send(request)
             .Match(() => Accepted(), failure => Error(failure));
     }
 }

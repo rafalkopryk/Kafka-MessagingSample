@@ -25,7 +25,6 @@ internal class ConsumerService : BackgroundService
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             await _busSubscriber.SubscribeEventAsync<MessagePublishedEvent>(stoppingToken);
-            await Task.Delay(1000, stoppingToken).ConfigureAwait(false);
         }
     }
 }
