@@ -1,4 +1,5 @@
 using Common.Infrastructure.Extensions;
+using Common.Infrastructure.ServiceBus;
 using Consumer.Application.Extensions;
 using Consumer.WorkerService;
 using Elastic.Apm.AspNetCore;
@@ -48,6 +49,6 @@ app.MapControllers();
 
 app.UseSerilogRequestLogging();
 
-app.UseElasticApm(app.Configuration);
+app.UseElasticApm(app.Configuration, new KafkaEventBusDiagnosticSubscriber());
 
 app.Run();

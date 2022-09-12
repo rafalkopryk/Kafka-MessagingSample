@@ -1,8 +1,6 @@
 ﻿namespace Common.Infrastructure.ServiceBus;
 
 using System;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,25 +9,30 @@ using Common.Application.Extensions;
 using Common.Application.ServiceBus;
 using Common.Infrastructure;
 using Confluent.Kafka;
-using Elastic.Apm;
-using Elastic.Apm.Api;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-internal class KafkaEventBusSubscriber : IEventBusSubscriber 
+internal class KafkaEventBusConsumer : IEventBusConsumer
 {
     private readonly IConsumer<string, string> _consumer;
     private readonly ILogger _logger;
     private readonly IEventProvider _eventProvider;
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public KafkaEventBusSubscriber(IConsumer<string, string> consumer, ILogger<KafkaEventBusSubscriber> logger,
-        IEventProvider eventProvider, IMediator mediator)
+    public KafkaEventBusConsumer(
+        IConsumer<string, string> consumer,
+        ILogger<KafkaEventBusConsumer> logger,
+        IEventProvider eventProvider,
+        IMediator mediator,
+        IConfiguration configuration)
     {
         _consumer = consumer;
         _logger = logger;
         _eventProvider = eventProvider;
         _mediator = mediator;
+        _configuration = configuration;
     }
 
     public async Task SubscribeEventAsync<TEvent>(CancellationToken cancellationToken) where TEvent : IEvent
@@ -43,7 +46,7 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(10));
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
                 await ConsumeNextEvent(consumer, cancellationToken);
             }
         }
@@ -61,20 +64,9 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
             var message = consumer.Consume(cancellationToken);
             if (message.Message == null) return;
 
-            var headers = message.Headers.ToDictionary(x => x.Key, y => Encoding.ASCII.GetString(y.GetValueBytes()));
-            var traceId = headers.FirstOrDefault(x => x.Key == "trace.Id").Value;
-
-            await Agent.Tracer.CaptureTransaction($"Kafka RECEIVE from { message.Topic}", ApiConstants.TypeMessaging, async () =>
+            using (var activity = Diagnostics.Consumer.Start(message.Message))
             {
-                Agent.Tracer.CurrentTransaction.Context.Message = new Message
-                {
-                    Body = message.Message.Value,
-                    Headers = headers,
-                    Queue = new Queue
-                    {
-                        Name = message.Topic,
-                    }
-                };
+                activity?.AddDefaultOpenTelemetryTags(message.Topic, message.Message);
 
                 var eventType = _eventProvider.GetByKey(message.Message.Key);
                 var @event = JsonSerializer.Deserialize(message.Message.Value, eventType);
@@ -83,11 +75,7 @@ internal class KafkaEventBusSubscriber : IEventBusSubscriber
                 consumer.Commit();
 
                 await _mediator.Publish(@event, cancellationToken);
-
-                //Agent.Tracer.CurrentTransaction.Labels.Add("topic", message.Topic);
-                //Agent.Tracer.CurrentTransaction.Labels.Add("body", message.Message.Value);
-            },
-            DistributedTracingData.TryDeserializeFromString(traceId));
+            }
         }
         catch (Exception e)
         {

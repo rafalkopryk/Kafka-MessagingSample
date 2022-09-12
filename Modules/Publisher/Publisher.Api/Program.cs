@@ -1,4 +1,5 @@
 using Common.Infrastructure.Extensions;
+using Common.Infrastructure.ServiceBus;
 using Elastic.Apm;
 using Elastic.Apm.AspNetCore;
 using Elastic.Apm.AspNetCore.DiagnosticListener;
@@ -13,6 +14,7 @@ using Serilog;
 using Serilog.Exceptions;
 using Serilog.Sinks.Elasticsearch;
 using System;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +59,6 @@ app.UseSerilogRequestLogging(opts =>
     opts.EnrichDiagnosticContext = LogEnricherExtensions.EnrichFromRequest;
 });
 
-app.UseElasticApm(app.Configuration);
+app.UseElasticApm(app.Configuration, new KafkaEventBusDiagnosticSubscriber());
 
 app.Run();

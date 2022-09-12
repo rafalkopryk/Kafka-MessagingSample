@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 internal class ConsumerService : BackgroundService
 {
     private readonly ILogger _logger;
-    private readonly IEventBusSubscriber _busSubscriber;
+    private readonly IEventBusConsumer _busConsumer;
 
-    public ConsumerService(ILogger<ConsumerService> logger, IEventBusSubscriber busSubscriber)
+    public ConsumerService(ILogger<ConsumerService> logger, IEventBusConsumer busSubscriber)
     {
         this._logger = logger;
-        this._busSubscriber = busSubscriber;
+        this._busConsumer = busSubscriber;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -24,7 +24,7 @@ internal class ConsumerService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            await _busSubscriber.SubscribeEventAsync<MessagePublishedEvent>(stoppingToken);
+            await _busConsumer.SubscribeEventAsync<MessagePublishedEvent>(stoppingToken);
         }
     }
 }

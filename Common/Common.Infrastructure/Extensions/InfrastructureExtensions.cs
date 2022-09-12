@@ -35,7 +35,7 @@ public static class InfrastructureExtensions
 
         serviceCollection.AddSingleton(consumer);
         serviceCollection.AddSingleton<IEventProvider>(eventProvider);
-        serviceCollection.AddTransient<IEventBusSubscriber, KafkaEventBusSubscriber>();
+        serviceCollection.AddTransient<IEventBusConsumer, KafkaEventBusConsumer>();
 
         return serviceCollection;
     }
@@ -48,7 +48,7 @@ public static class InfrastructureExtensions
         var producer = new ProducerBuilder<string, string>(producerConfig).Build();
 
         serviceCollection.AddSingleton(producer);
-        serviceCollection.AddTransient<IEventBusPublisher, KafkaEventBusPublisher>();
+        serviceCollection.AddTransient<IEventBusProducer, KafkaEventBusProducer>();
 
         return serviceCollection;
     }

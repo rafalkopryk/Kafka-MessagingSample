@@ -4,7 +4,7 @@ using Common.Application.CQRS;
 using System.Threading;
 using System.Threading.Tasks;
 
-public interface IEventBusSubscriber
+public interface IEventBusConsumer
 {
     Task SubscribeEventAsync<T>(CancellationToken cancellationToken) where T : IEvent;
 }

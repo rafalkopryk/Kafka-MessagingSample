@@ -5,6 +5,7 @@ using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Publisher.Api.Utils;
 using Publisher.Application.UseCases.PublishMessage.Commands;
 
@@ -13,9 +14,12 @@ public class MessageController : BaseController
 {
     private readonly IMediator _mediator;
 
-    public MessageController(IMediator mediator)
+    private readonly ILogger _logger;
+
+    public MessageController(IMediator mediator, ILogger<MessageController> logger)
     {
-        this._mediator = mediator;
+        _mediator = mediator;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -23,6 +27,8 @@ public class MessageController : BaseController
     [ProducesResponseType(typeof(Envelope), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PublishMessage([FromBody] PublishMessageCommand request)
     {
+        _logger.LogError("Test");
+
         return await _mediator.Send(request)
             .Match(() => Accepted(), failure => Error(failure));
     }
