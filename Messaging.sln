@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Consumer.Application", "Mod
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A9CFF0E9-2F15-4FFF-9F49-C306E5E9124D}"
 	ProjectSection(SolutionItems) = preProject
+		.env = .env
 		Directory.Build.props = Directory.Build.props
+		Config\otel-collector-config.yaml = Config\otel-collector-config.yaml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Infrastructure", "Common\Common.Infrastructure\Common.Infrastructure.csproj", "{31B032C6-307D-49C4-81E0-9CDB19DC3190}"
@@ -28,7 +30,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{C63CE3
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Publisher.Application", "Modules\Publisher\Publisher.Application\Publisher.Application.csproj", "{C723C983-6085-4E60-837C-616B780FAE23}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consumer.Api", "Modules\Consumer\Consumer.Api\Consumer.Api.csproj", "{533F8E15-07A5-401D-A692-9DAD6CCCECF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Consumer.Api", "Modules\Consumer\Consumer.Api\Consumer.Api.csproj", "{533F8E15-07A5-401D-A692-9DAD6CCCECF3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

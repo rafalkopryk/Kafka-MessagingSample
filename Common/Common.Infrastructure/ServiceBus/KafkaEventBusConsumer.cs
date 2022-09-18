@@ -1,6 +1,7 @@
 ﻿namespace Common.Infrastructure.ServiceBus;
 
 using System;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,7 +65,8 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
             var message = consumer.Consume(cancellationToken);
             if (message.Message == null) return;
 
-            using (var activity = Diagnostics.Consumer.Start(message.Message))
+            using var activity = Diagnostics.Consumer.Start(message.Topic, message.Message);
+            try
             {
                 activity?.AddDefaultOpenTelemetryTags(message.Topic, message.Message);
 
@@ -75,6 +77,13 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
                 consumer.Commit();
 
                 await _mediator.Publish(@event, cancellationToken);
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                throw;
             }
         }
         catch (Exception e)

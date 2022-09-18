@@ -11,25 +11,24 @@ internal static class Diagnostics
 
     internal static class Producer
     {
-        private const string ActivityName = ActivitySourceName + ".MessageProduced";
-
-        internal static Activity Start<TKey, TValue>(Message<TKey, TValue> message)
+        internal static Activity Start<TKey, TValue>(string topic, Message<TKey, TValue> message)
         {
-            return ActivitySource.StartActivity(ActivityName, ActivityKind.Producer);
+            var activityName = $"Kafka SEND to {topic}";
+            return ActivitySource.StartActivity(activityName, ActivityKind.Producer);
         }
     }
 
     internal static class Consumer
     {
-        private const string ActivityName = ActivitySourceName + ".MessageConsumed";
-
-        internal static Activity Start<TKey, TValue>(Message<TKey, TValue> message)
+        internal static Activity Start<TKey, TValue>(string topic, Message<TKey, TValue> message)
         {
             var headers = message.Headers.ToDictionary(x => x.Key, y => Encoding.ASCII.GetString(y.GetValueBytes()));
             var traceparent = headers.FirstOrDefault(x => x.Key == "traceparent").Value;
+
+            var activityName = $"Kafka RECEIVE from {topic}";
             return string.IsNullOrWhiteSpace(traceparent)
-                ? ActivitySource.StartActivity(ActivityName, ActivityKind.Consumer)
-                : ActivitySource.StartActivity(ActivityName, ActivityKind.Consumer, parentId: traceparent);
+                ? ActivitySource.StartActivity(activityName, ActivityKind.Consumer)
+                : ActivitySource.StartActivity(activityName, ActivityKind.Consumer, parentId: traceparent);
         }
     }
 
@@ -39,6 +38,7 @@ internal static class Diagnostics
         Message<TKey, TValue> message)
     {
         activity?.AddTag(MessagingAttributes.SYSTEM, "kafka");
+
         activity?.AddTag(MessagingAttributes.DESTINATION, topic);
         activity?.AddTag(MessagingAttributes.DESTINATION_KIND, "topic");
 

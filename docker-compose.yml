@@ -1,26 +1,66 @@
-version: '3.8'
+version: "2.2"
 
 services:
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    healthcheck:
+      interval: 1s
+      timeout: 5s
+      retries: 120
+
+  es01:
+    container_name: es01
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    ports:
+      - ${ES_PORT}:9200
+    environment:
+      - node.name=es01
+      - cluster.name=${CLUSTER_NAME}
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.license.self_generated.type=${LICENSE}
+    mem_limit: ${MEM_LIMIT}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  kibana:
+    container_name: kibana
+    depends_on:
+      - es01
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    volumes:
+      - kibanadata:/usr/share/kibana/data
+    ports:
+      - ${KIBANA_PORT}:5601
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+    mem_limit: ${MEM_LIMIT}
+
   messaging.publishservice.api:
     image: ${DOCKER_REGISTRY-}messagingpublisherapi
     build:
       context: .
       dockerfile: Modules/Publisher/Publisher.Api/Dockerfile
     container_name: messaging-publisher
-    networks:
-      - kafkanetwork
-      - elasticsearchnetwork
-      - influxnetwork
     depends_on:
       - kafka
     environment:
         ASPNETCORE_ENVIRONMENT: Development
-        Elasticsearch__Url: http://elastic:9200
+        Elasticsearch__Url: http://es01:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-publisher
-        ElasticApm__ServerUrl: http://apm:8200
-        INFLUXDB__URL: http://influxdb:8086
-        INFLUXDB__TOKEN: rbiebsEkl9e2ftd6HDfRR_1rlQLagPulKMAwSO6MukgBxGx8OxX-G9HSbTMbm6TQInu1eFSa8vJonPzSbdGj3A==
+
 
   messaging.consumerservice.api:
     image: ${DOCKER_REGISTRY-}messagingconsumerapi
@@ -28,15 +68,11 @@ services:
       context: .
       dockerfile: Modules/Consumer/Consumer.Api/Dockerfile
     container_name: messaging-consumer
-    networks:
-      - kafkanetwork
-      - elasticsearchnetwork
-      - influxnetwork
     depends_on:
       - kafka
     environment:
         ASPNETCORE_ENVIRONMENT: Development
-        Elasticsearch__Url: http://elastic:9200
+        Elasticsearch__Url: http://es01:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-consumer
         EventBus__enableautocommit: "false"
@@ -44,13 +80,9 @@ services:
         EventBus__autooffsetreset: earliest
         EventBus__enablepartitioneof: "true"
         ElasticApm__ServerUrl: http://apm:8200
-        INFLUXDB__URL: http://influxdb:8086
-        INFLUXDB__TOKEN: rbiebsEkl9e2ftd6HDfRR_1rlQLagPulKMAwSO6MukgBxGx8OxX-G9HSbTMbm6TQInu1eFSa8vJonPzSbdGj3A==
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
-    networks:
-    - kafkanetwork
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -63,8 +95,6 @@ services:
     ports:
      - "9092:9092"
     hostname: kafka
-    networks:
-    - kafkanetwork
     container_name: kafka
     depends_on:
       - zookeeper
@@ -76,52 +106,23 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.5
-    container_name: elastic
-    environment:
-      - node.name=elastic
-      - discovery.type=single-node
-    ports:
-        - "9200:9200"
-        - "9300:9300"
-    volumes:
-        - type: bind
-          source: ./elasticsearchdata
-          target: /usr/share/elasticsearch/data2
-    networks:
-        - elasticsearchnetwork
-  kibana:
-        image: docker.elastic.co/kibana/kibana:7.17.5
-        container_name: kibana
-        ports:
-            - "5601:5601"
-        networks:
-            - elasticsearchnetwork
-        depends_on:
-            - elasticsearch
-
   apm:
-    image: docker.elastic.co/apm/apm-server:7.17.5
+    image: docker.elastic.co/apm/apm-server:${STACK_VERSION}
     container_name: apm
     cap_add: ["CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"]
     cap_drop: ["ALL"]
     ports:
       - 8200:8200
-    networks:
-        - elasticsearchnetwork 
     depends_on:
-        - elasticsearch
+        - es01
         - kibana
     command: >
       apm-server -e
-         -E apm-server.rum.enabled=true
-         -E setup.kibana.host=kibana:5601
-         -E setup.template.settings.index.number_of_replicas=0
-         -E apm-server.kibana.enabled=true
-         -E apm-server.kibana.host=kibana:5601
-         -E output.elasticsearch.hosts=["elastic:9200"]
-
+         -E output.elasticsearch.hosts=["es01:9200"]
+         -E output.elasticsearch.protocol=http
+         -E output.elasticsearch.username=elastic
+         -E output.elasticsearch.password=${ELASTIC_PASSWORD}
+         -E output.elasticsearch.ssl.enabled=false
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
@@ -132,51 +133,54 @@ services:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    networks:
-        - kafkanetwork 
     depends_on:
         - kafka
         - zookeeper
 
-  influxdb:
-    image: influxdb:latest
-    container_name: influxdb
-    ports:
-      - '8086:8086'
-    volumes:
-      - influxdb-storage:/var/lib/influxdb
-    environment:
-      - INFLUXDB_DB=db0
-      - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_ADMIN_PASSWORD=admin
-    networks:
-     - influxnetwork
+  #influxdb:
+  #  image: influxdb:latest
+  #  container_name: influxdb
+  #  ports:
+  #    - '8086:8086'
+  #  volumes:
+  #    - influxdb-storage:/var/lib/influxdb
+  #  environment:
+  #    - INFLUXDB_DB=db0
+  #    - INFLUXDB_ADMIN_USER=admin
+  #    - INFLUXDB_ADMIN_PASSWORD=admin
+  #  networks:
+  #   - influxnetwork
 
-  chronograf:
-    image: chronograf:latest
-    container_name: chronograf
-    ports:
-      - '127.0.0.1:8888:8888'
+  #chronograf:
+  #  image: chronograf:latest
+  #  container_name: chronograf
+  #  ports:
+  #    - '127.0.0.1:8888:8888'
+  #  volumes:
+  #    - chronograf-storage:/var/lib/chronograf
+  #  depends_on:
+  #    - influxdb
+  #  environment:
+  #    - INFLUXDB_URL=http://influxdb:8086
+  #    - INFLUXDB_USERNAME=admin
+  #    - INFLUXDB_PASSWORD=admin
+  #  networks:
+  #   - influxnetwork
+
+  otel:
+    container_name: otel
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
-      - chronograf-storage:/var/lib/chronograf
+      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4318:4318"
+      - "4317:4317"
     depends_on:
-      - influxdb
-    environment:
-      - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_USERNAME=admin
-      - INFLUXDB_PASSWORD=admin
-    networks:
-     - influxnetwork
+      - apm
 
 volumes:
-    elasticsearchdata:
-    influxdb-storage:
-    chronograf-storage:
-
-networks:
-  kafkanetwork:
-    driver: bridge
-  elasticsearchnetwork:
-    driver: bridge
-  influxnetwork:
-    driver: bridge
+  esdata01:
+    driver: local
+  kibanadata:
+    driver: local

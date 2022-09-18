@@ -39,11 +39,17 @@ internal class KafkaEventBusProducer : IEventBusProducer
             }
         };
 
-        using (var activity = Diagnostics.Producer.Start(message))
+        using var activity = Diagnostics.Producer.Start(eventEnvelope.Topic, message);
+        try
         {
             activity?.AddDefaultOpenTelemetryTags(eventEnvelope.Topic, message);
-
             await _producer.ProduceAsync(eventEnvelope.Topic, message, cancellationToken);
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
         }
 
         _logger.LogInformation("Kafka SEND to {Topic}", eventEnvelope.Topic);
