@@ -57,12 +57,9 @@ services:
       - kafka
     environment:
         ASPNETCORE_ENVIRONMENT: Development
-        Elasticsearch__Url: http://es01:9200
-        Elasticsearch__User: elastic
-        Elasticsearch__Password: ${ELASTIC_PASSWORD}
+        Elasticsearch__ConnectionString: http://elastic:${ELASTIC_PASSWORD}@es01:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-publisher
-
 
   messaging.consumerservice.api:
     image: ${DOCKER_REGISTRY-}messagingconsumerapi
@@ -74,9 +71,7 @@ services:
       - kafka
     environment:
         ASPNETCORE_ENVIRONMENT: Development
-        Elasticsearch__Url: http://es01:9200
-        Elasticsearch__User: elastic
-        Elasticsearch__Password: ${ELASTIC_PASSWORD}
+        Elasticsearch__ConnectionString: http://elastic:${ELASTIC_PASSWORD}@es01:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-consumer
         EventBus__enableautocommit: "false"

@@ -6,22 +6,22 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.Enrichers.Span;
 using Serilog.Exceptions;
 using Serilog.Sinks.Elasticsearch;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container.sedc
 
 builder.Host.UseSerilog((context, configuration) => configuration
     .Enrich.FromLogContext()
+    .Enrich.WithSpan()
     .Enrich.WithExceptionDetails()
     .WriteTo.Console()
-    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(context.Configuration["Elasticsearch:Url"]))
+    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(context.Configuration["Elasticsearch:ConnectionString"]))
     {
-        ModifyConnectionSettings = x => x.BasicAuthentication(
-            context.Configuration["Elasticsearch:User"],
-            context.Configuration["Elasticsearch:Password"]),
+        TypeName = null,
         IndexFormat = $"applogs-{context.Configuration["AppName"]}-{DateTimeOffset.Now:yyy-MM-dd}",
         AutoRegisterTemplate = true,
     })
@@ -49,13 +49,20 @@ builder.Services.AddOpenTelemetryTracing(builder =>
     });
 });
 
-//builder.Logging.AddOpenTelemetry(builder =>
-//{
-//    builder.IncludeFormattedMessage = true;
-//    builder.IncludeScopes = true;
-//    builder.ParseStateValues = true;
-//    builder.AddConsoleExporter();
-//});
+
+builder.Logging.AddOpenTelemetry(builder =>
+{
+    builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"));
+    builder.IncludeFormattedMessage = true;
+    builder.IncludeScopes = true;
+    builder.ParseStateValues = true;
+    builder.AddConsoleExporter();
+    builder.AddOtlpExporter(configure =>
+    {
+        configure.Endpoint = new Uri("http://otel:4317");
+    });
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
