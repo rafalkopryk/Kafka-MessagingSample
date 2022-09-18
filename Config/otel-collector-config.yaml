@@ -12,13 +12,16 @@ exporters:
     endpoint: "apm:8200"  
     tls:
       insecure: true
+  zipkin:
+    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+    format: proto
 processors:
   batch:
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [logging, otlp/elastic]
+      exporters: [logging, otlp/elastic, zipkin]
       processors: [batch]
     metrics:
         receivers: [otlp]

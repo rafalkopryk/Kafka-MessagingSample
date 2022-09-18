@@ -181,6 +181,13 @@ services:
       - "4317:4317"
     depends_on:
       - apm
+      - zipkin-all-in-one
+
+  zipkin-all-in-one:
+    container_name: zipkin
+    image: openzipkin/zipkin:latest
+    ports:
+      - "9411:9411"
 
 volumes:
   esdata01:
