@@ -13,5 +13,6 @@ stack:
 - Apache Kafka - distributed streaming platform
 
 event.messaging.publisher.messagePublished.v1 event on Elastic APM.
-![image](https://user-images.githubusercontent.com/17733188/182048574-22c37dce-aa35-48b1-98ec-feb71c649710.png)
+![image](https://user-images.githubusercontent.com/17733188/189773129-942cbcc9-e6b1-41f4-b5ff-36a2fb6e265c.png)
+
 
