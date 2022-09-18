@@ -13,6 +13,7 @@ using Confluent.Kafka;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Trace;
 
 internal class KafkaEventBusConsumer : IEventBusConsumer
 {
@@ -77,12 +78,10 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
                 consumer.Commit();
 
                 await _mediator.Publish(@event, cancellationToken);
-
-                activity?.SetStatus(ActivityStatusCode.Ok);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                activity?.RecordException(e);
                 throw;
             }
         }

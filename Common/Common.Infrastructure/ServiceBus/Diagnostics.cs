@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Common.Application;
 using Confluent.Kafka;
 
 internal static class Diagnostics

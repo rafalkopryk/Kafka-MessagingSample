@@ -2,8 +2,6 @@ using Common.Infrastructure.Extensions;
 using Common.Infrastructure.ServiceBus;
 using Consumer.Application.Extensions;
 using Consumer.WorkerService;
-using Elastic.Apm.AspNetCore;
-using Elastic.Apm.SerilogEnricher;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -18,10 +16,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, configuration) => configuration
     .Enrich.FromLogContext()
     .Enrich.WithExceptionDetails()
-    .Enrich.WithElasticApmCorrelationInfo()
     .WriteTo.Console()
     .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(context.Configuration["Elasticsearch:Url"]))
     {
+        ModifyConnectionSettings = x => x.BasicAuthentication(
+            context.Configuration["Elasticsearch:User"],
+            context.Configuration["Elasticsearch:Password"]),
         IndexFormat = $"applogs-{context.Configuration["AppName"]}-{DateTimeOffset.Now:yyy-MM-dd}",
         AutoRegisterTemplate = true,
     })
@@ -35,8 +35,9 @@ builder.Services.AddHostedService<ConsumerService>();
 
 builder.Services.AddOpenTelemetryTracing(builder =>
 {
-    builder.AddHttpClientInstrumentation();
-    builder.AddAspNetCoreInstrumentation();
+    builder.AddHttpClientInstrumentation(x=> x.RecordException = true);
+    builder.AddAspNetCoreInstrumentation(x => x.RecordException = true);
+    builder.SetErrorStatusOnException();
     builder.AddSource("Common.Infrastructure.ServiceBus");
     builder.SetResourceBuilder(
         ResourceBuilder.CreateDefault()
@@ -48,13 +49,13 @@ builder.Services.AddOpenTelemetryTracing(builder =>
     });
 });
 
-builder.Logging.AddOpenTelemetry(builder =>
-{
-    builder.IncludeFormattedMessage = true;
-    builder.IncludeScopes = true;
-    builder.ParseStateValues = true;
-    builder.AddConsoleExporter();
-});
+//builder.Logging.AddOpenTelemetry(builder =>
+//{
+//    builder.IncludeFormattedMessage = true;
+//    builder.IncludeScopes = true;
+//    builder.ParseStateValues = true;
+//    builder.AddConsoleExporter();
+//});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

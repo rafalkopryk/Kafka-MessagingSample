@@ -58,6 +58,8 @@ services:
     environment:
         ASPNETCORE_ENVIRONMENT: Development
         Elasticsearch__Url: http://es01:9200
+        Elasticsearch__User: elastic
+        Elasticsearch__Password: ${ELASTIC_PASSWORD}
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-publisher
 
@@ -73,13 +75,14 @@ services:
     environment:
         ASPNETCORE_ENVIRONMENT: Development
         Elasticsearch__Url: http://es01:9200
+        Elasticsearch__User: elastic
+        Elasticsearch__Password: ${ELASTIC_PASSWORD}
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-consumer
         EventBus__enableautocommit: "false"
         EventBus__statisticsintervalms: 5000
         EventBus__autooffsetreset: earliest
         EventBus__enablepartitioneof: "true"
-        ElasticApm__ServerUrl: http://apm:8200
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

@@ -11,6 +11,7 @@ using Common.Application.Extensions;
 using Common.Application.ServiceBus;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Trace;
 
 internal class KafkaEventBusProducer : IEventBusProducer
 {
@@ -29,6 +30,7 @@ internal class KafkaEventBusProducer : IEventBusProducer
         var data = JsonSerializer.Serialize(@event);
         var eventEnvelope = typeof(TEvent).GetEventEnvelopeAttribute() ?? throw new ArgumentNullException(nameof(EventEnvelopeAttribute));
 
+
         var message = new Message<string, string>
         {
             Key = eventEnvelope.Topic,
@@ -43,15 +45,16 @@ internal class KafkaEventBusProducer : IEventBusProducer
         try
         {
             activity?.AddDefaultOpenTelemetryTags(eventEnvelope.Topic, message);
-            await _producer.ProduceAsync(eventEnvelope.Topic, message, cancellationToken);
 
-            activity?.SetStatus(ActivityStatusCode.Ok);
+            await _producer.ProduceAsync(eventEnvelope.Topic, message, cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.RecordException(e);
+            throw;
         }
 
         _logger.LogInformation("Kafka SEND to {Topic}", eventEnvelope.Topic);
+
     }
 }

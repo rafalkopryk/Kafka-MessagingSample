@@ -1,4 +1,4 @@
-﻿namespace Common.Infrastructure.ServiceBus;
+﻿namespace Common.Application;
 
 /// <summary>
 ///  https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/messaging.md#messaging-attributes

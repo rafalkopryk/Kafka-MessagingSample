@@ -1,35 +1,36 @@
-﻿namespace Common.Infrastructure.ServiceBus;
+﻿namespace Common.Infrastructure.ElasticAPM.ServiceBus;
 
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
+using Common.Application;
 using Elastic.Apm;
 using Elastic.Apm.Api;
 
 public class KafkaEventBusElasticActivityListener : IDisposable
 {
-	private readonly ConcurrentDictionary<string, ITransaction> _activeTransactions = new();
-	private readonly ConcurrentDictionary<string, ISpan> _activeSpans = new();
+    private readonly ConcurrentDictionary<string, ITransaction> _activeTransactions = new();
+    private readonly ConcurrentDictionary<string, ISpan> _activeSpans = new();
 
-	private readonly IApmAgent _agent;
+    private readonly IApmAgent _agent;
 
-	private readonly ActivityListener _listener;
+    private readonly ActivityListener _listener;
 
     public KafkaEventBusElasticActivityListener(IApmAgent agent)
     {
         _agent = agent;
 
-		_listener = new ActivityListener
-		{
-			ActivityStarted = ActivityStarted,
-			ActivityStopped = ActivityStopped,
-			ShouldListenTo = activitySource => activitySource == Diagnostics.ActivitySource,
-			Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
-		};
+        _listener = new ActivityListener
+        {
+            ActivityStarted = ActivityStarted,
+            ActivityStopped = ActivityStopped,
+            ShouldListenTo = activitySource => activitySource.Name == "Common.Infrastructure.ServiceBus",
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
+        };
 
-		ActivitySource.AddActivityListener(_listener);
-	}
+        ActivitySource.AddActivityListener(_listener);
+    }
 
     private Action<Activity> ActivityStarted =>
         activity =>
@@ -49,10 +50,10 @@ public class KafkaEventBusElasticActivityListener : IDisposable
             }
         };
 
-	private Action<Activity> ActivityStopped =>
-		activity =>
-		{
-			if (activity.Kind == ActivityKind.Producer)
+    private Action<Activity> ActivityStopped =>
+        activity =>
+        {
+            if (activity.Kind == ActivityKind.Producer)
             {
                 ProducerActivityStopped(activity);
                 return;
