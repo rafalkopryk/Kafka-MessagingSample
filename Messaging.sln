@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.env = .env
 		Directory.Build.props = Directory.Build.props
 		Config\otel-collector-config.yaml = Config\otel-collector-config.yaml
+		Config\telegraf.conf = Config\telegraf.conf
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Infrastructure", "Common\Common.Infrastructure\Common.Infrastructure.csproj", "{31B032C6-307D-49C4-81E0-9CDB19DC3190}"
@@ -32,7 +33,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Publisher.Application", "Mo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Consumer.Api", "Modules\Consumer\Consumer.Api\Consumer.Api.csproj", "{533F8E15-07A5-401D-A692-9DAD6CCCECF3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.Infrastructure.ElasticAPM", "Common\Common.Infrastructure.ElasticAPM\Common.Infrastructure.ElasticAPM.csproj", "{EC6A5C1E-9C96-4E4B-9742-C815A3D7893D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Infrastructure.ElasticAPM", "Common\Common.Infrastructure.ElasticAPM\Common.Infrastructure.ElasticAPM.csproj", "{EC6A5C1E-9C96-4E4B-9742-C815A3D7893D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

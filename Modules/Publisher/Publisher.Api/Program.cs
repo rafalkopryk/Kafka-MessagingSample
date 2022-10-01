@@ -15,6 +15,7 @@ using Serilog.Enrichers.Span;
 using Serilog.Exceptions;
 using Serilog.Sinks.Elasticsearch;
 using System;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,13 +53,14 @@ builder.Services.AddOpenTelemetryTracing(builder => builder
         configure.Endpoint = new Uri("http://otel:4317");
     }));
 
-builder.Logging.AddOpenTelemetry(builder =>
+
+builder.Services.AddOpenTelemetryMetrics(builder =>
 {
     builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Publisher", serviceVersion: "1.0.0"));
-    builder.IncludeFormattedMessage = true;
-    builder.IncludeScopes = true;
-    builder.ParseStateValues = true;
+        .AddService(serviceName: "Messaging.Publisher", serviceVersion: "1.0.0"));
+    builder.AddMeter("Common.Infrastructure.ServiceBus");
+    builder.AddRuntimeInstrumentation();
+    builder.AddAspNetCoreInstrumentation();
     builder.AddConsoleExporter();
     builder.AddOtlpExporter(configure =>
     {
@@ -66,24 +68,12 @@ builder.Logging.AddOpenTelemetry(builder =>
     });
 });
 
-//builder.Services.AddOpenTelemetryMetrics(builder =>
-//{
-//    builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-//        .AddService(serviceName: "Messaging.Publisher", serviceVersion: "1.0.0"));
-//    builder.AddHttpClientInstrumentation();
-//    builder.AddAspNetCoreInstrumentation();
-//    builder.AddConsoleExporter();
-//    builder.AddOtlpExporter(configure =>
-//    {
-//        configure.Endpoint = new Uri("http://otel:4317");
-//    });
-//});
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
 
+
+var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

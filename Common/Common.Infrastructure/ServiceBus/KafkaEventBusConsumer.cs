@@ -1,7 +1,9 @@
 ﻿namespace Common.Infrastructure.ServiceBus;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +19,10 @@ using OpenTelemetry.Trace;
 
 internal class KafkaEventBusConsumer : IEventBusConsumer
 {
+    private static readonly Meter _meter = new("Common.Infrastructure.ServiceBus");
+    private static readonly Counter<int> _consumeCounter = _meter.CreateCounter<int>("consume-events-counter");
+    private static readonly Histogram<decimal> _consumeHistogram = _meter.CreateHistogram<decimal>("consume-events-histogram");
+
     private readonly IConsumer<string, string> _consumer;
     private readonly ILogger _logger;
     private readonly IEventProvider _eventProvider;
@@ -48,7 +54,7 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(50));
+                await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken);
                 await ConsumeNextEvent(consumer, cancellationToken);
             }
         }
@@ -66,6 +72,7 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
             var message = consumer.Consume(cancellationToken);
             if (message.Message == null) return;
 
+            Stopwatch sw = Stopwatch.StartNew();
             using var activity = Diagnostics.Consumer.Start(message.Topic, message.Message);
             try
             {
@@ -78,9 +85,25 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
                 consumer.Commit();
 
                 await _mediator.Publish(@event, cancellationToken);
+
+                var tags = new TagList
+                {
+                    { "topic" , message.Topic},
+                    { "Status", "Negative" }
+                };
+                _consumeCounter.Add(("topic", message.Topic), ("Status", "Positive"));
+                _consumeHistogram.Record(sw.ElapsedMilliseconds, tags);
             }
             catch (Exception e)
             {
+                var tags = new TagList
+                {
+                    { "topic" , message.Topic},
+                    { "Status", "Negative" }
+                };
+                _consumeCounter.Add(1, tags);
+                _consumeHistogram.Record(sw.ElapsedMilliseconds, tags);
+
                 activity?.RecordException(e);
                 throw;
             }
@@ -92,3 +115,16 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
     }
 }
 
+public static class CounterExtensions
+{
+    public static void Add(this Counter<int> counter, params (string key, string value)[] tags)
+    {
+        var tagList = new TagList();
+        foreach (var tag in tags)
+        {
+            tagList.Add(tag.key, tag.value);
+        }
+
+        counter.Add(1, tagList);
+    }
+}
