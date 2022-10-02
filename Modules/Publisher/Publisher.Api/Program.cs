@@ -41,8 +41,26 @@ builder.Services.AddEventBus(builder.Configuration);
 builder.Services.AddPublisherApplication();
 
 builder.Services.AddOpenTelemetryTracing(builder => builder
-    .AddHttpClientInstrumentation(x => x.RecordException = true)
-    .AddAspNetCoreInstrumentation(x => x.RecordException = true)
+    .AddHttpClientInstrumentation(x =>
+    {
+        x.Filter = (filter) =>
+        {
+            var elasticBulk = filter.RequestUri.AbsoluteUri.Contains("es01:9200/_bulk", StringComparison.OrdinalIgnoreCase);
+            var result = elasticBulk;
+            return !result;
+        };
+        x.RecordException = true;
+    })
+    .AddAspNetCoreInstrumentation(x => 
+    {
+        x.Filter = (filter) =>
+        {
+            var swagger = filter.Request.Path.Value.Contains("swagger", StringComparison.OrdinalIgnoreCase);
+            var result = swagger;
+            return !result;
+        };
+        x.RecordException = true;
+    })
     .SetErrorStatusOnException()
     .AddSource("Common.Infrastructure.ServiceBus")
     .SetResourceBuilder(ResourceBuilder.CreateDefault()
