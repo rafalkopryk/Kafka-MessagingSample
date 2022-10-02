@@ -7,6 +7,7 @@ services:
       interval: 1s
       timeout: 5s
       retries: 120
+        until curl -s -X POST -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
 
   es01:
     container_name: es01
