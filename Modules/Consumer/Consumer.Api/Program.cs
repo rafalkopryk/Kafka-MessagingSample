@@ -35,15 +35,33 @@ builder.Services.AddHostedService<ConsumerService>();
 
 builder.Services.AddOpenTelemetryTracing(builder =>
 {
-    builder.AddHttpClientInstrumentation(x=> x.RecordException = true);
-    builder.AddAspNetCoreInstrumentation(x => x.RecordException = true);
-    builder.SetErrorStatusOnException();
-    builder.AddSource("Common.Infrastructure.ServiceBus");
-    builder.SetResourceBuilder(
+    builder.AddHttpClientInstrumentation(x =>
+     {
+         x.Filter = (filter) =>
+         {
+             var elasticBulk = filter.RequestUri.AbsoluteUri.Contains("es01:9200/_bulk", StringComparison.OrdinalIgnoreCase);
+             var result = elasticBulk;
+             return !result;
+         };
+         x.RecordException = true;
+     })
+    .AddAspNetCoreInstrumentation(x =>
+    {
+        x.Filter = (filter) =>
+        {
+            var swagger = filter.Request.Path.Value.Contains("swagger", StringComparison.OrdinalIgnoreCase);
+            var result = swagger;
+            return !result;
+        };
+        x.RecordException = true;
+    })
+    .SetErrorStatusOnException()
+    .AddSource("Common.Infrastructure.ServiceBus")
+    .SetResourceBuilder(
         ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"));
-    builder.AddConsoleExporter();
-    builder.AddOtlpExporter(configure =>
+            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"))
+    .AddConsoleExporter()
+    .AddOtlpExporter(configure =>
     {
         configure.Endpoint = new Uri("http://otel:4317");
     });
