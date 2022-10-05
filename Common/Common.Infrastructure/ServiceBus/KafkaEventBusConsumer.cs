@@ -11,6 +11,7 @@ using Common.Application.CQRS;
 using Common.Application.Extensions;
 using Common.Application.ServiceBus;
 using Common.Infrastructure;
+using Common.Infrastructure.Extensions;
 using Confluent.Kafka;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -19,10 +20,6 @@ using OpenTelemetry.Trace;
 
 internal class KafkaEventBusConsumer : IEventBusConsumer
 {
-    private static readonly Meter _meter = new("Common.Infrastructure.ServiceBus");
-    private static readonly Counter<int> _consumeCounter = _meter.CreateCounter<int>("consume-events-counter");
-    private static readonly Histogram<decimal> _consumeHistogram = _meter.CreateHistogram<decimal>("consume-events-histogram");
-
     private readonly IConsumer<string, string> _consumer;
     private readonly ILogger _logger;
     private readonly IEventProvider _eventProvider;
@@ -74,6 +71,7 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
 
             Stopwatch sw = Stopwatch.StartNew();
             using var activity = Diagnostics.Consumer.Start(message.Topic, message.Message);
+
             try
             {
                 activity?.AddDefaultOpenTelemetryTags(message.Topic, message.Message);
@@ -86,23 +84,25 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
 
                 await _mediator.Publish(@event, cancellationToken);
 
-                var tags = new TagList
+                var tags = new[]
                 {
-                    { "topic" , message.Topic},
-                    { "Status", "Negative" }
+                    ("topic", message.Topic),
+                    ("Status", "Positive")
                 };
-                _consumeCounter.Add(("topic", message.Topic), ("Status", "Positive"));
-                _consumeHistogram.Record(sw.ElapsedMilliseconds, tags);
+
+                Diagnostics.ConsumeCounter.Add(tags);
+                Diagnostics.ConsumeHistogram.Record(sw.ElapsedMilliseconds, tags);
             }
             catch (Exception e)
             {
-                var tags = new TagList
+                var tags = new[]
                 {
-                    { "topic" , message.Topic},
-                    { "Status", "Negative" }
+                    ("topic", message.Topic),
+                    ("Status", "Positive")
                 };
-                _consumeCounter.Add(1, tags);
-                _consumeHistogram.Record(sw.ElapsedMilliseconds, tags);
+
+                Diagnostics.ConsumeCounter.Add(tags);
+                Diagnostics.ConsumeHistogram.Record(sw.ElapsedMilliseconds, tags);
 
                 activity?.RecordException(e);
                 throw;
@@ -112,19 +112,5 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
         {
             _logger.LogError(e, "Error consuming message");
         }
-    }
-}
-
-public static class CounterExtensions
-{
-    public static void Add(this Counter<int> counter, params (string key, string value)[] tags)
-    {
-        var tagList = new TagList();
-        foreach (var tag in tags)
-        {
-            tagList.Add(tag.key, tag.value);
-        }
-
-        counter.Add(1, tagList);
     }
 }

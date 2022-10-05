@@ -10,6 +10,7 @@ services:
         until curl -s -X POST -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
         echo "All done!";'
 
+
   es01:
     container_name: es01
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
@@ -33,6 +34,7 @@ services:
         soft: -1
         hard: -1
 
+
   kibana:
     container_name: kibana
     depends_on:
@@ -49,6 +51,7 @@ services:
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
     mem_limit: ${MEM_LIMIT}
 
+
   messaging.publishservice.api:
     image: ${DOCKER_REGISTRY-}messagingpublisherapi
     build:
@@ -62,6 +65,7 @@ services:
         Elasticsearch__ConnectionString: http://elastic:${ELASTIC_PASSWORD}@es01:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-publisher
+
 
   messaging.consumerservice.api:
     image: ${DOCKER_REGISTRY-}messagingconsumerapi
@@ -81,6 +85,7 @@ services:
         EventBus__autooffsetreset: earliest
         EventBus__enablepartitioneof: "true"
 
+
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
@@ -89,6 +94,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -105,6 +111,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
 
   apm:
     image: docker.elastic.co/apm/apm-server:${STACK_VERSION}
@@ -123,6 +130,7 @@ services:
          -E output.elasticsearch.username=elastic
          -E output.elasticsearch.password=${ELASTIC_PASSWORD}
          -E output.elasticsearch.ssl.enabled=false
+
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
@@ -159,7 +167,13 @@ services:
     links:
       - influxdb
 
-
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
   otel:
     container_name: otel
     image: otel/opentelemetry-collector:latest
@@ -167,18 +181,15 @@ services:
     volumes:
       - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4318:4318"
-      - "4317:4317"
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP http receiver
+      - "55679:55679" # zpages extension
     depends_on:
       - apm
-      - zipkin-all-in-one
-      - influxdb
-
-  zipkin-all-in-one:
-    container_name: zipkin
-    image: openzipkin/zipkin:latest
-    ports:
-      - "9411:9411"
 
 volumes:
   esdata01:

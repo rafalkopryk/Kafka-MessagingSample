@@ -61,7 +61,8 @@ builder.Services.AddOpenTelemetryTracing(builder =>
     .AddSource("Common.Infrastructure.ServiceBus")
     .SetResourceBuilder(
         ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"))
+            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
+            .AddTelemetrySdk())
     .AddConsoleExporter()
     .AddOtlpExporter(configure =>
     {
@@ -73,7 +74,8 @@ builder.Services.AddOpenTelemetryTracing(builder =>
 builder.Logging.AddOpenTelemetry(builder =>
 {
     builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"));
+            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
+            .AddTelemetrySdk());
     builder.IncludeFormattedMessage = true;
     builder.IncludeScopes = true;
     builder.ParseStateValues = true;
@@ -87,13 +89,16 @@ builder.Logging.AddOpenTelemetry(builder =>
 builder.Services.AddOpenTelemetryMetrics(builder =>
 {
     builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-        .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"));
+        .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
+        .AddTelemetrySdk());
     builder.AddMeter("Common.Infrastructure.ServiceBus");
     builder.AddAspNetCoreInstrumentation();
     builder.AddConsoleExporter();
-    builder.AddOtlpExporter(configure =>
+    builder.AddOtlpExporter((configure, configureMetricReader ) =>
     {
         configure.Endpoint = new Uri("http://otel:4317");
+        configureMetricReader.TemporalityPreference = MetricReaderTemporalityPreference.Cumulative;
+        configureMetricReader.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
     });
 });
 
