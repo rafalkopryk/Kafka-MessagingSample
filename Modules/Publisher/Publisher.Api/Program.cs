@@ -92,8 +92,8 @@ builder.Services.AddOpenTelemetryMetrics(builder =>
         .AddService(serviceName: "Messaging.Publisher", serviceVersion: "1.0.0")
         .AddTelemetrySdk());
     builder.AddMeter("Common.Infrastructure.ServiceBus");
-    builder.AddRuntimeInstrumentation();
     builder.AddAspNetCoreInstrumentation();
+    builder.AddHttpClientInstrumentation();
     builder.AddConsoleExporter();
     builder.AddOtlpExporter((configure, configureMetricReader) =>
     {

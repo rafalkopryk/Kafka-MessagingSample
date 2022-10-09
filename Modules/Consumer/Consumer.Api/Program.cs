@@ -93,6 +93,7 @@ builder.Services.AddOpenTelemetryMetrics(builder =>
         .AddTelemetrySdk());
     builder.AddMeter("Common.Infrastructure.ServiceBus");
     builder.AddAspNetCoreInstrumentation();
+    builder.AddHttpClientInstrumentation();
     builder.AddConsoleExporter();
     builder.AddOtlpExporter((configure, configureMetricReader ) =>
     {
