@@ -1,5 +1,6 @@
 ﻿namespace Common.Infrastructure.ServiceBus;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 using Common.Application;
@@ -9,6 +10,10 @@ internal static class Diagnostics
 {
     private const string ActivitySourceName = "Common.Infrastructure.ServiceBus";
     public static ActivitySource ActivitySource { get; } = new ActivitySource(ActivitySourceName);
+
+    public static readonly Meter Meter = new("Common.Infrastructure.ServiceBus");
+    public static readonly Counter<int> ConsumeCounter = Meter.CreateCounter<int>("consume-events-count");
+    public static readonly Histogram<double> ConsumeHistogram = Meter.CreateHistogram<double>("consume-events-duration", "ms", "measures the duration of the consume events");
 
     internal static class Producer
     {
