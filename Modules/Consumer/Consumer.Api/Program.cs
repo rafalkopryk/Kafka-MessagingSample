@@ -3,12 +3,14 @@ using Common.Infrastructure.ServiceBus;
 using Consumer.Application.Extensions;
 using Consumer.WorkerService;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Enrichers.Span;
 using Serilog.Exceptions;
 using Serilog.Sinks.Elasticsearch;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +61,8 @@ builder.Services.AddOpenTelemetryTracing(builder =>
     .AddSource("Common.Infrastructure.ServiceBus")
     .SetResourceBuilder(
         ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"))
+            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
+            .AddTelemetrySdk())
     .AddConsoleExporter()
     .AddOtlpExporter(configure =>
     {
@@ -71,7 +74,8 @@ builder.Services.AddOpenTelemetryTracing(builder =>
 builder.Logging.AddOpenTelemetry(builder =>
 {
     builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0"));
+            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
+            .AddTelemetrySdk());
     builder.IncludeFormattedMessage = true;
     builder.IncludeScopes = true;
     builder.ParseStateValues = true;
@@ -82,11 +86,28 @@ builder.Logging.AddOpenTelemetry(builder =>
     });
 });
 
+builder.Services.AddOpenTelemetryMetrics(builder =>
+{
+    builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
+        .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
+        .AddTelemetrySdk());
+    builder.AddMeter("Common.Infrastructure.ServiceBus");
+    builder.AddAspNetCoreInstrumentation();
+    builder.AddHttpClientInstrumentation();
+    builder.AddConsoleExporter();
+    builder.AddOtlpExporter((configure, configureMetricReader ) =>
+    {
+        configure.Endpoint = new Uri("http://otel:4317");
+        configureMetricReader.TemporalityPreference = MetricReaderTemporalityPreference.Cumulative;
+        configureMetricReader.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
+    });
+});
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 
 if (app.Environment.IsDevelopment())
