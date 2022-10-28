@@ -27,8 +27,6 @@ public class MessageController : BaseController
     [ProducesResponseType(typeof(Envelope), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PublishMessage([FromBody] PublishMessageCommand request)
     {
-        _logger.LogError("Test");
-
         return await _mediator.Send(request)
             .Match(() => Accepted(), failure => Error(failure));
     }
