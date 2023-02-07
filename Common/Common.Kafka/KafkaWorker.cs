@@ -1,48 +1,40 @@
-﻿namespace Common.Infrastructure.ServiceBus;
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Common.Application.CQRS;
-using Common.Application.Extensions;
-using Common.Application.ServiceBus;
-using Common.Infrastructure;
-using Common.Infrastructure.Extensions;
+using Common.Application;
 using Confluent.Kafka;
 using MediatR;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
+using System.Diagnostics;
+using System.Text.Json;
 
-internal class KafkaEventBusConsumer : IEventBusConsumer
+namespace Common.Kafka;
+
+internal class KafkaWorker<TEvent> : BackgroundService
+    where TEvent : INotification
 {
-    private readonly IConsumer<string, string> _consumer;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger _logger;
-    private readonly IEventProvider _eventProvider;
-    private readonly IMediator _mediator;
-    private readonly IConfiguration _configuration;
 
-    public KafkaEventBusConsumer(
-        IConsumer<string, string> consumer,
-        ILogger<KafkaEventBusConsumer> logger,
-        IEventProvider eventProvider,
-        IMediator mediator,
-        IConfiguration configuration)
+    public KafkaWorker(IServiceScopeFactory serviceScopeFactory, ILogger<KafkaWorker<TEvent>> logger)
     {
-        _consumer = consumer;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
-        _eventProvider = eventProvider;
-        _mediator = mediator;
-        _configuration = configuration;
     }
 
-    public async Task SubscribeEventAsync<TEvent>(CancellationToken cancellationToken) where TEvent : IEvent
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var consumer = _consumer;
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+            await SubscribeEventAsync<TEvent>(stoppingToken);
+        }
+    }
+
+    public async Task SubscribeEventAsync<TEvent>(CancellationToken cancellationToken) where TEvent : INotification
+    {
+        using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
+        using var consumer = serviceScope.ServiceProvider.GetRequiredService<IConsumer<string, string>>();
 
         var topic = typeof(TEvent).GetEventEnvelopeAttribute() ?? throw new ArgumentNullException(nameof(EventEnvelopeAttribute));
         consumer.Subscribe(topic.Topic);
@@ -66,8 +58,12 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
     {
         try
         {
+            using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
+            var mediator = serviceScope.ServiceProvider.GetRequiredService<IMediator>();
+            
             var message = consumer.Consume(cancellationToken);
             if (message.Message == null) return;
+
 
             Stopwatch sw = Stopwatch.StartNew();
             using var activity = Diagnostics.Consumer.Start(message.Topic, message.Message);
@@ -76,13 +72,12 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
             {
                 activity?.AddDefaultOpenTelemetryTags(message.Topic, message.Message);
 
-                var eventType = _eventProvider.GetByKey(message.Message.Key);
-                var @event = JsonSerializer.Deserialize(message.Message.Value, eventType);
+                var @event = JsonSerializer.Deserialize(message.Message.Value, typeof(TEvent), JsonSerializerCustomOptions.CamelCase);
                 if (@event == null) return;
 
-                consumer.Commit();
+                await mediator.Publish(@event, cancellationToken);
 
-                await _mediator.Publish(@event, cancellationToken);
+                consumer.Commit();
 
                 var tags = new[]
                 {
@@ -114,3 +109,5 @@ internal class KafkaEventBusConsumer : IEventBusConsumer
         }
     }
 }
+
+

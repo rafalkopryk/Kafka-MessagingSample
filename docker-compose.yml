@@ -65,7 +65,7 @@ services:
         Elasticsearch__ConnectionString: http://elastic:${ELASTIC_PASSWORD}@es01:9200
         EventBus__bootstrapservers: kafka:9092
         EventBus__groupid: messaging-publisher
-
+        otel__url: http://otel:4317
 
   messaging.consumerservice.api:
     image: ${DOCKER_REGISTRY-}messagingconsumerapi
@@ -84,7 +84,7 @@ services:
         EventBus__statisticsintervalms: 5000
         EventBus__autooffsetreset: earliest
         EventBus__enablepartitioneof: "true"
-
+        otel__url: http://otel:4317
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest

@@ -1,4 +1,4 @@
-﻿namespace Common.Infrastructure.ServiceBus;
+﻿namespace Common.Kafka;
 
 using System;
 using System.Diagnostics;
@@ -7,8 +7,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Application.CQRS;
-using Common.Application.Extensions;
-using Common.Application.ServiceBus;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;

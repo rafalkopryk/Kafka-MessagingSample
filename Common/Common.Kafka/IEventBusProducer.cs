@@ -1,4 +1,4 @@
-﻿namespace Common.Application.ServiceBus;
+﻿namespace Common.Kafka;
 
 using Common.Application.CQRS;
 using System.Threading;

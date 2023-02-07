@@ -3,20 +3,19 @@
 using Consumer.Application.UseCases.MessagePublished;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Common.Kafka;
 
 public static class ServiceCollectionExtensions
 {
-    public static void AddConsumerApplication(this IServiceCollection services)
+    public static void AddApplication(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMediatR(typeof(MessagePublishedEvent));
 
-        services.AddConsumerEventHandlers();
-    }
-
-    private static IServiceCollection AddConsumerEventHandlers(this IServiceCollection services)
-    {
-        services.AddTransient<INotificationHandler<MessagePublishedEvent>, MessagePublishedEventHandler>();
-
-        return services;
+        services.AddKafka(
+            options => configuration.GetSection("EventBus").Bind(options),
+            options => configuration.GetSection("EventBus").Bind(options),
+            builder => builder
+                .UseTopic<MessagePublishedEvent>());
     }
 }

@@ -4,7 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Application.CQRS;
-using Common.Application.ServiceBus;
+using Common.Kafka;
 using CSharpFunctionalExtensions;
 using Publisher.Application.UseCases.PublishMessage.Events;
 

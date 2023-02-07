@@ -1,16 +1,9 @@
-using Common.Infrastructure.Extensions;
-using Common.Infrastructure.ServiceBus;
+using Common.Application.Extensions;
 using Consumer.Application.Extensions;
-using Consumer.WorkerService;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Enrichers.Span;
 using Serilog.Exceptions;
 using Serilog.Sinks.Elasticsearch;
-using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,78 +24,9 @@ builder.Host.UseSerilog((context, configuration) => configuration
 
 builder.Services.AddControllers();
 
-builder.Services.AddConsumerApplication();
-builder.Services.AddEventBus(builder.Configuration);
-builder.Services.AddHostedService<ConsumerService>();
+builder.Services.AddApplication(builder.Configuration);
 
-builder.Services.AddOpenTelemetryTracing(builder =>
-{
-    builder.AddHttpClientInstrumentation(x =>
-     {
-         x.Filter = (filter) =>
-         {
-             var elasticBulk = filter.RequestUri.AbsoluteUri.Contains("es01:9200/_bulk", StringComparison.OrdinalIgnoreCase);
-             var result = elasticBulk;
-             return !result;
-         };
-         x.RecordException = true;
-     })
-    .AddAspNetCoreInstrumentation(x =>
-    {
-        x.Filter = (filter) =>
-        {
-            var swagger = filter.Request.Path.Value.Contains("swagger", StringComparison.OrdinalIgnoreCase);
-            var result = swagger;
-            return !result;
-        };
-        x.RecordException = true;
-    })
-    .SetErrorStatusOnException()
-    .AddSource("Common.Infrastructure.ServiceBus")
-    .SetResourceBuilder(
-        ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
-            .AddTelemetrySdk())
-    .AddConsoleExporter()
-    .AddOtlpExporter(configure =>
-    {
-        configure.Endpoint = new Uri("http://otel:4317");
-    });
-});
-
-
-builder.Logging.AddOpenTelemetry(builder =>
-{
-    builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-            .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
-            .AddTelemetrySdk());
-    builder.IncludeFormattedMessage = true;
-    builder.IncludeScopes = true;
-    builder.ParseStateValues = true;
-    builder.AddConsoleExporter();
-    builder.AddOtlpExporter(configure =>
-    {
-        configure.Endpoint = new Uri("http://otel:4317");
-    });
-});
-
-builder.Services.AddOpenTelemetryMetrics(builder =>
-{
-    builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
-        .AddService(serviceName: "Messaging.Cusumer", serviceVersion: "1.0.0")
-        .AddTelemetrySdk());
-    builder.AddMeter("Common.Infrastructure.ServiceBus");
-    builder.AddAspNetCoreInstrumentation();
-    builder.AddHttpClientInstrumentation();
-    builder.AddConsoleExporter();
-    builder.AddOtlpExporter((configure, configureMetricReader ) =>
-    {
-        configure.Endpoint = new Uri("http://otel:4317");
-        configureMetricReader.TemporalityPreference = MetricReaderTemporalityPreference.Cumulative;
-        configureMetricReader.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
-    });
-});
-
+builder.Services.AddInfrastructure(builder.Configuration, "Messaging.Cusumer");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

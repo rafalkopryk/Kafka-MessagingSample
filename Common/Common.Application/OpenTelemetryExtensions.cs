@@ -1,6 +1,7 @@
-﻿namespace Common.Infrastructure.Extensions;
+﻿namespace Common.Application;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+
 
 public static class OpenTelemetryExtensions
 {
