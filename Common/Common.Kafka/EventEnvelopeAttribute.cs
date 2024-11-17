@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Common.Kafka;
+﻿namespace Common.Kafka;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class EventEnvelopeAttribute : Attribute

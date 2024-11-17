@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
-using Common.Application;
 using Confluent.Kafka;
 
 internal static class Diagnostics

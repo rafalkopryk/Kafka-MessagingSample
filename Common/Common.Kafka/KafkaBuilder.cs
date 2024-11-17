@@ -1,5 +1,4 @@
-﻿using MediatR;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
 namespace Common.Kafka;
 
@@ -12,8 +11,11 @@ public class KafkaBuilder
         _services = services;
     }
 
-    public KafkaBuilder UseTopic<T>() where T : INotification
+    public KafkaBuilder UseHandler<T, THandler>()
+        where T : IEvent
+        where THandler : IEventHandler<T>
     {
+        _services.AddScoped(typeof(IEventHandler<T>), typeof(THandler));
         _services.AddHostedService<KafkaWorker<T>>();
         return this;
     }

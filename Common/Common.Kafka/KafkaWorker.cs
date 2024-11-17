@@ -1,17 +1,14 @@
-using Common.Application;
 using Confluent.Kafka;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Trace;
 using System.Diagnostics;
 using System.Text.Json;
 
 namespace Common.Kafka;
 
 internal class KafkaWorker<TEvent> : BackgroundService
-    where TEvent : INotification
+    where TEvent : IEvent
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger _logger;
@@ -27,11 +24,11 @@ internal class KafkaWorker<TEvent> : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            await SubscribeEventAsync<TEvent>(stoppingToken);
+            await SubscribeEventAsync(stoppingToken);
         }
     }
 
-    public async Task SubscribeEventAsync<TEvent>(CancellationToken cancellationToken) where TEvent : INotification
+    public async Task SubscribeEventAsync(CancellationToken cancellationToken)
     {
         using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
         using var consumer = serviceScope.ServiceProvider.GetRequiredService<IConsumer<string, string>>();
@@ -43,14 +40,12 @@ internal class KafkaWorker<TEvent> : BackgroundService
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken);
                 await ConsumeNextEvent(consumer, cancellationToken);
             }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Error consuming message");
-            consumer.Close();
         }
     }
 
@@ -58,12 +53,13 @@ internal class KafkaWorker<TEvent> : BackgroundService
     {
         try
         {
-            using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
-            var mediator = serviceScope.ServiceProvider.GetRequiredService<IMediator>();
+            var message = consumer.Consume(TimeSpan.FromMilliseconds(200));
+            if (message is null or { IsPartitionEOF : true })
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
+            }
             
-            var message = consumer.Consume(cancellationToken);
-            if (message.Message == null) return;
-
+            if (message?.Message == null) return;
 
             Stopwatch sw = Stopwatch.StartNew();
             using var activity = Diagnostics.Consumer.Start(message.Topic, message.Message);
@@ -72,34 +68,35 @@ internal class KafkaWorker<TEvent> : BackgroundService
             {
                 activity?.AddDefaultOpenTelemetryTags(message.Topic, message.Message);
 
-                var @event = JsonSerializer.Deserialize(message.Message.Value, typeof(TEvent), JsonSerializerCustomOptions.CamelCase);
+                var @event = JsonSerializer.Deserialize(message.Message.Value, typeof(TEvent), JsonSerializerOptions.Web);
                 if (@event == null) return;
 
-                await mediator.Publish(@event, cancellationToken);
+                using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
+                var eventHandler = serviceScope.ServiceProvider.GetRequiredService(typeof(IEventHandler<TEvent>)) as IEventHandler<TEvent>;
+
+                await eventHandler.Handle((TEvent)@event, cancellationToken);
 
                 consumer.Commit();
 
-                var tags = new[]
-                {
-                    ("topic", message.Topic),
-                    ("Status", "Positive")
-                };
+                TagList tags = [
+                    new ("topic", message.Topic),
+                    new ("Status", "Positive"),
+                ];
 
-                Diagnostics.ConsumeCounter.Add(tags);
+                Diagnostics.ConsumeCounter.Add(1, tags);
                 Diagnostics.ConsumeHistogram.Record(sw.ElapsedMilliseconds, tags);
             }
             catch (Exception e)
             {
-                var tags = new[]
-                {
-                    ("topic", message.Topic),
-                    ("Status", "Positive")
-                };
+                TagList tags = [
+                    new ("topic", message.Topic),
+                    new ("Status", "Positive"),
+                ];
 
-                Diagnostics.ConsumeCounter.Add(tags);
+                Diagnostics.ConsumeCounter.Add(1, tags);
                 Diagnostics.ConsumeHistogram.Record(sw.ElapsedMilliseconds, tags);
 
-                activity?.RecordException(e);
+                activity?.AddException(e);
                 throw;
             }
         }

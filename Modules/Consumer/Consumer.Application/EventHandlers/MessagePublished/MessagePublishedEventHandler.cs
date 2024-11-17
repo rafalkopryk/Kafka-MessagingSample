@@ -1,11 +1,10 @@
-﻿namespace Consumer.Application.UseCases.MessagePublished;
-
-using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Application.CQRS;
+using Common.Kafka;
 using Microsoft.Extensions.Logging;
+
+namespace Consumer.Application.EventHandlers.MessagePublished;
 
 internal class MessagePublishedEventHandler : IEventHandler<MessagePublishedEvent>
 {

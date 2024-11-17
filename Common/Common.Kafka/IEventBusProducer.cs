@@ -1,6 +1,4 @@
 ﻿namespace Common.Kafka;
-
-using Common.Application.CQRS;
 using System.Threading;
 using System.Threading.Tasks;
 

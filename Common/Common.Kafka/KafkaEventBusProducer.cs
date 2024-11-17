@@ -6,10 +6,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Application.CQRS;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Trace;
 
 internal class KafkaEventBusProducer : IEventBusProducer
 {
@@ -25,13 +23,11 @@ internal class KafkaEventBusProducer : IEventBusProducer
 
     public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken) where TEvent : IEvent
     {
-        var data = JsonSerializer.Serialize(@event);
+        var data = JsonSerializer.Serialize(@event, JsonSerializerOptions.Web);
         var eventEnvelope = typeof(TEvent).GetEventEnvelopeAttribute() ?? throw new ArgumentNullException(nameof(EventEnvelopeAttribute));
-
 
         var message = new Message<string, string>
         {
-            Key = eventEnvelope.Topic,
             Value = data,
             Headers = new Headers
             {
@@ -50,7 +46,7 @@ internal class KafkaEventBusProducer : IEventBusProducer
         }
         catch (Exception e)
         {
-            activity?.RecordException(e);
+            activity?.AddException(e);
             throw;
         }
     }
