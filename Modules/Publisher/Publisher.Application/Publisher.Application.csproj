@@ -2,12 +2,8 @@
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MediatR" Version="12.4.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Common\Common.Kafka\Common.Kafka.csproj" />

@@ -2,10 +2,10 @@ using Messaging.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var kafka = builder.AddKafka("kafka", 62799)
-       .WithDataVolume("kafka")
-       .WithLifetime(ContainerLifetime.Persistent)
-       .WithKafkaUI(x => x.WithLifetime(ContainerLifetime.Persistent));
+var kafka = builder.AddKafka("kafka", 62899)
+    //    .WithDataVolume("kafka")
+    //    .WithLifetime(ContainerLifetime.Persistent)
+       .WithKafkaUI();
 
 builder.AddProject<Projects.Consumer_Api>("messaging-consumer", configure => configure.ExcludeLaunchProfile = true)
     .WithKafkaReference(kafka, "messaging-consumer")

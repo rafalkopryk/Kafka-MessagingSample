@@ -1,4 +1,3 @@
-using MediatR;
 using Messaging.ServiceDefaults;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -7,6 +6,8 @@ using Publisher.Application.Extensions;
 using Scalar.AspNetCore;
 using System.Threading.Tasks;
 using Publisher.Application.UseCases.PublishMessage;
+using System.Threading;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,9 +35,9 @@ app.UseCors(x => x
     .AllowCredentials());
 
 var messagesEndpoints = app.MapGroup("/messages");
-messagesEndpoints.MapPost("/", async Task<IResult> (PublishMessageCommand command, IMediator mediator) =>
+messagesEndpoints.MapPost("/", async Task<IResult> (PublishMessageCommand command, [FromServices] PublishMessageCommandHandler mediator) =>
 {
-    var result = await mediator.Send(command);
+    var result = await mediator.Handle(command, CancellationToken.None );
     return result switch
     {
         PublishMessageCommandResult.Success => TypedResults.Accepted(string.Empty),

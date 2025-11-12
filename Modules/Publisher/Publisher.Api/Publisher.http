@@ -1,0 +1,17 @@
+### POST request to example server
+
+@applicationUrl=https://localhost:6601
+
+POST {{applicationUrl}}/messages
+Content-Type: application/json
+
+{
+   "messages":[
+      {
+         "author": "Test Author",
+         "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam a nunc a felis vehicula dictum eget elementum nisi. Duis laoreet dolor dolor, in fringilla justo pulvinar vel. Duis vitae risus eu dui auctor accumsan. Duis auctor, mi et laoreet fringilla, nunc odio finibus tortor, in vulputate nulla neque vitae nisl. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Mauris dui leo, tempor quis posuere et, viverra a metus. Nullam libero nulla, ornare quis porta a, tincidunt eget elit. Fusce ornare sit amet elit quis condimentum. In vitae turpis erat. Donec pharetra, ex sed rhoncus efficitur, tortor nibh mollis urna, at placerat ante lectus vitae massa."
+      }
+   ]
+}
+
+###

@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>77e279a7-9591-4c88-86c6-75ff70dc051b</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
-	<PackageReference Include="Scalar.AspNetCore" Version="1.2.39" />
-	<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.10.3" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

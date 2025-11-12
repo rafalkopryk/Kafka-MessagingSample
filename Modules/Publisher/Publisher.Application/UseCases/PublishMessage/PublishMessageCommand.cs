@@ -1,9 +1,6 @@
-﻿using MediatR;
+﻿namespace Publisher.Application.UseCases.PublishMessage;
 
-namespace Publisher.Application.UseCases.PublishMessage;
-
-public record PublishMessageCommand(MessageDto[] Messages)
-    : IRequest<PublishMessageCommandResult>;
+public record PublishMessageCommand(MessageDto[] Messages);
 
 public record MessageDto
 {
@@ -16,7 +13,7 @@ public abstract record PublishMessageCommandResult
 {
     public record Success() : PublishMessageCommandResult
     {
-        public static readonly Success Result = new ();
+        public static readonly Success Result = new();
     }
 
     public record Error(string Detail) : PublishMessageCommandResult;

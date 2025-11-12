@@ -2,13 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Kafka;
-using MediatR;
 
 namespace Publisher.Application.UseCases.PublishMessage;
 
 using static PublishMessageCommandResult;
 
-internal class PublishMessageCommandHandler : IRequestHandler<PublishMessageCommand, PublishMessageCommandResult>
+public class PublishMessageCommandHandler
 {
     private readonly IEventBusProducer _busProducer;
     private readonly TimeProvider _timeProvider;
